@@ -2,3 +2,5 @@
 # These two are needed for the MCP server (and for the MCP parity check of run_eval.py).
 mcp>=1.12
 uvicorn>=0.30
+# Needed only to run a Claude model with run_llm.py (LLM_PROVIDER=anthropic).
+anthropic>=1.0

@@ -8,7 +8,7 @@
 | Serveur MCP (stdio et HTTP) | Fait, vérifié identique à l'exécution directe |
 | Solution de référence | 0,89 de moyenne sur 10 seeds, jamais sous 0,80 sur 60 seeds |
 | Baselines « ne rien faire » et « arrêt précoce » | 0,00 et 0,06 |
-| Tests d'exploits (21 tests) | Tous passent |
+| Tests (23 tests, dont les tentatives de triche) | Tous passent |
 | Interface de résultats | `results/report.html` |
 | Boucle pour un modèle frontier (Gemini, etc.) | Écrite, testée seulement contre un faux serveur |
 | Emballage Harbor | Généré, jamais lancé sous Docker |
@@ -19,11 +19,15 @@
 1. **Lancer un vrai modèle.** C'est le point qui manque pour le critère « gap ».
 
    ```bash
-   export LLM_API_KEY=...
+   cp .env.example .env
    ```
 
+   Ouvrir `.env` et y mettre la clé. Pour Claude : `LLM_PROVIDER=anthropic`,
+   `ANTHROPIC_API_KEY=...`, `LLM_MODEL=claude-opus-5-5` (il faut aussi `pip install anthropic`).
+   Pour Gemini ou un autre : `LLM_PROVIDER=gemini`, `LLM_API_KEY=...`, `LLM_MODEL=...`.
+
    ```bash
-   python run_llm.py --provider gemini --model <id du modèle> --seeds 3 --runs 3
+   python run_llm.py --seeds 3 --runs 3
    ```
 
    ```bash
@@ -54,6 +58,11 @@
 5. **Bonus** : exporter des parties de la référence (`python export_dataset.py`), affiner un
    petit modèle, puis le mesurer avec `run_llm.py --base-url ...`.
 
+## Voir les résultats
+
+Ouvrir `results/report.html` dans un navigateur : c'est un fichier unique, sans serveur, reconstruit
+à chaque `python run_eval.py`.
+
 ## Trame de la démo (10 minutes)
 
 1. **Le problème (1 min).** Un largage d'eau tombe là où l'air l'emmène. Les militaires
@@ -68,7 +77,7 @@
    tableau « vérité contre hypothèse », la rose des vents, puis la barre « où les points sont
    perdus ».
 5. **L'intégrité de la récompense (1 min).** Le tableau des scores : ne rien faire 0, arrêt
-   précoce 0,06, largage sans modèle 0. Citer les 21 tests.
+   précoce 0,06, largage sans modèle 0. Citer les 23 tests.
 6. **Reproductibilité (1 min).** Lancer `python run_eval.py` en direct : 30 secondes.
 
 ## Trois phrases à garder en tête

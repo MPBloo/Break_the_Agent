@@ -46,15 +46,23 @@ worth. **No frontier model has been run yet in this repository** (no API key was
 where it was built). The harness for it is ready and tested against a mock endpoint:
 
 ```bash
-export LLM_API_KEY=...
-python run_llm.py --provider gemini --model <model id> --seeds 3 --runs 3
+cp .env.example .env      # put your key and model in .env (ignored by git)
+python run_llm.py --seeds 3 --runs 3
 python run_eval.py        # replays the transcripts, attributes lost points, updates the report
 ```
 
-`--provider` accepts `gemini`, `openai`, `anthropic`, `openrouter`; `--base-url` accepts any
-OpenAI-compatible endpoint. The model plays in a plain tool-calling loop with the seven mission
-tools: no shell, no code execution. Expect roughly 1.5 to 3 million input tokens per mission
-without prompt caching (about 140 tool calls with a growing context).
+`.env` selects the model. With `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`, a Claude model
+plays through the official Anthropic SDK (`pip install anthropic`; default model
+`claude-opus-5-5`, adaptive thinking, prompt caching, server-side refusal fallbacks unless
+`LLM_FALLBACKS=off`; the transcript records which model served). With `LLM_PROVIDER=gemini`,
+`openai` or `openrouter` and `LLM_API_KEY`, or `--base-url` for any OpenAI-compatible endpoint,
+the generic loop is used. Either way the model gets a one-paragraph instruction and the seven
+mission tools: no shell, no code execution. Expect roughly 1.5 to 3 million input tokens per
+mission (about 140 tool calls with a growing context); with prompt caching most of them are
+cache reads.
+
+To look at results, open `results/report.html` in a browser. It is a single self-contained file,
+rebuilt by every `python run_eval.py`.
 
 ## The mission
 
@@ -167,7 +175,8 @@ been run (no Docker daemon was available).
 bomber/            the environment: physics.py, world.py, episode.py (tools, rules, score),
                    mcp_server.py, analysis.py (lost-points attribution), report.py
 agents/            reference.py, heuristics.py (reference with one decision degraded),
-                   baselines.py, llm_agent.py (frontier-model loop)
+                   baselines.py, anthropic_agent.py (Claude loop, Anthropic SDK),
+                   llm_agent.py (loop for OpenAI-compatible endpoints)
 run_eval.py        the one command
 run_llm.py         run a frontier model and store its transcripts
 solve.py           the reference on one seed

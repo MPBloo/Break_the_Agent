@@ -2,10 +2,11 @@
 
 The model sees the same one-paragraph instruction and the same seven tools as every other agent,
 and nothing else. It talks to any OpenAI-compatible chat-completions endpoint, which covers
-Gemini, OpenAI, Anthropic, OpenRouter and local servers (vLLM, Ollama) for small models.
+Gemini, OpenAI, OpenRouter and local servers (vLLM, Ollama) for small models. Claude models go
+through agents/anthropic_agent.py instead, which uses the Anthropic SDK.
 
 Configuration (environment variables or arguments of `make_agent`):
-    LLM_PROVIDER   gemini | openai | anthropic | openrouter   (sets the base URL)
+    LLM_PROVIDER   gemini | openai | openrouter   (sets the base URL)
     LLM_BASE_URL   overrides the provider's base URL
     LLM_API_KEY    API key
     LLM_MODEL      model id, e.g. gemini-3-pro-preview
@@ -24,7 +25,6 @@ from bomber.episode import INSTRUCTION, TOOLS
 BASE_URLS = {
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
     "openai": "https://api.openai.com/v1",
-    "anthropic": "https://api.anthropic.com/v1",
     "openrouter": "https://openrouter.ai/api/v1",
 }
 

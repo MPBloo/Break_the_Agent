@@ -3,3 +3,4 @@ __pycache__/
 harbor/tasks/
 data/
 .venv/
+.env

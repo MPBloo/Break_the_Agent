@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Run a frontier model on the mission and store its transcripts under results/llm/<label>/.
 
-    export LLM_API_KEY=...
-    python run_llm.py --provider gemini --model gemini-3-pro-preview --seeds 3 --runs 3
+    cp .env.example .env        # then put your key in .env
+    python run_llm.py --seeds 3 --runs 3
+
+Settings come from .env (or the environment); command-line options override them.
+  Claude:  LLM_PROVIDER=anthropic, ANTHROPIC_API_KEY, LLM_MODEL (default claude-opus-5-5)
+  Others:  LLM_PROVIDER=gemini|openai|openrouter, LLM_API_KEY, LLM_MODEL, or --base-url for any
+           OpenAI-compatible endpoint (e.g. a local vLLM server hosting a small fine-tuned model)
 
 The model plays through a plain tool-calling loop: the seven mission tools, no shell, no code
-execution. Any OpenAI-compatible endpoint works (--provider gemini|openai|anthropic|openrouter,
-or --base-url for anything else, e.g. a local vLLM server hosting a small fine-tuned model).
+execution.
 
 Stored transcripts are picked up by `python run_eval.py`, which replays them to verify their
 score, attributes the lost points and adds them to the report. Existing files are not re-run.
@@ -22,6 +26,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
+
+from bomber.envfile import load_env  # noqa: E402
+
+load_env(os.path.join(ROOT, ".env"))     # before the agents read their settings
 
 from agents.llm_agent import LLMConfig, make_agent  # noqa: E402
 from bomber.runner import run_episode  # noqa: E402
@@ -41,10 +49,26 @@ def main() -> int:
     ap.add_argument("--out", default=os.path.join(ROOT, "results"))
     a = ap.parse_args()
 
-    cfg = LLMConfig(model=a.model, provider=a.provider, base_url=a.base_url)
-    if not cfg.ready():
-        print("Missing configuration: set LLM_API_KEY and pass --model (and --provider or --base-url).")
-        return 2
+    if a.provider == "anthropic" and not a.base_url:
+        try:
+            from agents.anthropic_agent import ClaudeConfig, make_agent as make_claude_agent
+        except ImportError:
+            print("The Anthropic SDK is not installed. Run: pip install anthropic")
+            return 2
+        cfg = ClaudeConfig(model=a.model)
+        if not cfg.ready():
+            print("Missing key: put ANTHROPIC_API_KEY in .env (see .env.example).")
+            return 2
+        agent = make_claude_agent(cfg)
+        print(f"Claude agent: model {cfg.model}, effort {cfg.effort}, "
+              f"refusal fallbacks {'on' if cfg.fallbacks else 'off'}.")
+    else:
+        cfg = LLMConfig(model=a.model, provider=a.provider, base_url=a.base_url)
+        if not cfg.ready():
+            print("Missing configuration: set LLM_API_KEY and LLM_MODEL in .env (see .env.example), "
+                  "or pass --model with --provider or --base-url.")
+            return 2
+        agent = make_agent(cfg)
     label = a.label or cfg.model
     folder = os.path.join(a.out, "llm", re.sub(r"[^A-Za-z0-9._-]+", "_", label))
     os.makedirs(folder, exist_ok=True)
@@ -55,7 +79,7 @@ def main() -> int:
         if os.path.exists(path):
             with open(path) as f:
                 return seed, run, json.load(f)["score"], "cached"
-        rec = run_episode(make_agent(cfg), seed, transport=a.transport)
+        rec = run_episode(agent, seed, transport=a.transport)
         rec.update(agent=label, run=run)
         if rec["agent_error"] and rec["counts"]["tool_calls"] == 0:
             return seed, run, None, rec["agent_error"]       # nothing happened: do not store
