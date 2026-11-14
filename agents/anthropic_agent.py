@@ -6,7 +6,8 @@ mission tools, nothing else. No shell, no code execution.
 Configuration (environment variables, or a .env file read by run_llm.py):
     ANTHROPIC_API_KEY   credentials (the SDK also accepts ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile)
     LLM_MODEL           model id, default claude-opus-5-5
-    LLM_EFFORT          low | medium | high | xhigh | max, default high
+    LLM_EFFORT          low | medium | high | xhigh | max, default high (models that support effort)
+    LLM_THINKING_BUDGET thinking tokens per turn for older models without adaptive thinking, default 8000
     LLM_FALLBACKS       "off" disables server-side refusal fallbacks (on by default where supported)
     BOMBER_PROGRESS     set to 1 to print a progress line every ten requests
 """
@@ -25,12 +26,35 @@ from .llm_agent import NUDGE, SYSTEM
 # Models that accept the server-side `fallbacks` parameter.
 FALLBACK_MODELS = {"claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"}
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+# Older models think only before their first tool call of a turn unless this beta is on.
+INTERLEAVED_BETA = "interleaved-thinking-2025-05-14"
+
+
+def _request_shape(api, cfg) -> tuple[dict, list[str]]:
+    """Thinking and effort settings the model actually supports, read from the Models API.
+    Returns (request fields, beta flags)."""
+    try:
+        caps = api.models.retrieve(cfg.model).to_dict().get("capabilities") or {}
+    except anthropic.APIError:
+        caps = {}
+    types = (caps.get("thinking") or {}).get("types") or {}
+    supports = lambda name: (types.get(name) or {}).get("supported", False)  # noqa: E731
+    fields, betas = {}, []
+    if supports("adaptive") or not types:
+        fields["thinking"] = {"type": "adaptive", "display": "summarized"}
+    elif supports("enabled"):
+        fields["thinking"] = {"type": "enabled", "budget_tokens": cfg.thinking_budget}
+        betas.append(INTERLEAVED_BETA)
+    if (caps.get("effort") or {}).get("supported", not caps):
+        fields["output_config"] = {"effort": cfg.effort}
+    return fields, betas
 
 
 class ClaudeConfig:
     def __init__(self, model=None, effort=None, fallbacks=None, max_tool_calls=260, base_url=None, api_key=None):
         self.model = model or os.environ.get("LLM_MODEL") or "claude-opus-5-5"
         self.effort = effort or os.environ.get("LLM_EFFORT") or "high"
+        self.thinking_budget = int(os.environ.get("LLM_THINKING_BUDGET") or 8000)
         if fallbacks is None:
             fallbacks = os.environ.get("LLM_FALLBACKS", "").lower() != "off"
         self.fallbacks = fallbacks and self.model in FALLBACK_MODELS
@@ -57,6 +81,9 @@ def make_agent(cfg: ClaudeConfig | None = None):
             kwargs["api_key"] = cfg.api_key
         api = anthropic.Anthropic(**kwargs)
         tools = _tool_specs()
+        shape, betas = _request_shape(api, cfg)
+        if cfg.fallbacks:
+            betas.append(FALLBACK_BETA)
         messages = [{"role": "user", "content": "Begin the mission."}]
         notes = []
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "cache_read_tokens": 0, "requests": 0}
@@ -65,13 +92,14 @@ def make_agent(cfg: ClaudeConfig | None = None):
         while not done and n_calls < cfg.max_tool_calls:
             request = dict(
                 model=cfg.model, max_tokens=16000, system=SYSTEM, tools=tools, messages=messages,
-                thinking={"type": "adaptive", "display": "summarized"},
-                output_config={"effort": cfg.effort},
                 cache_control={"type": "ephemeral"},   # the history only grows: cache the whole prefix
+                **shape,
             )
+            if cfg.fallbacks:
+                request["fallbacks"] = "default"
             try:
-                if cfg.fallbacks:
-                    resp = api.beta.messages.create(betas=[FALLBACK_BETA], fallbacks="default", **request)
+                if betas:
+                    resp = api.beta.messages.create(betas=betas, **request)
                 else:
                     resp = api.messages.create(**request)
             except anthropic.AuthenticationError:
@@ -140,7 +168,8 @@ def make_agent(cfg: ClaudeConfig | None = None):
                 break
             messages.append({"role": "user", "content": NUDGE})
 
-        return {"model": cfg.model, "served_by": sorted(served), "effort": cfg.effort, "fallbacks": cfg.fallbacks,
+        return {"model": cfg.model, "served_by": sorted(served), "fallbacks": cfg.fallbacks,
+                "thinking": shape.get("thinking"), "effort": (shape.get("output_config") or {}).get("effort"),
                 "notes": notes, "usage": usage, "stopped": stopped}
 
     return run

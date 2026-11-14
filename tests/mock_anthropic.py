@@ -22,6 +22,14 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def do_GET(self):       # Models API lookup: this fake model reports no capabilities
+        out = json.dumps({"id": "claude-opus-5-5", "type": "model", "display_name": "mock", "created_at": "2026-01-01T00:00:00Z"}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         SEEN.append({"path": self.path, "body": body, "beta": self.headers.get("anthropic-beta")})

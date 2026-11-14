@@ -3,7 +3,7 @@
   "n_test_drops": 10,
   "n_calculations": 120,
   "n_targets": 5,
-  "score_radius": 10.0,
+  "score_radius": 6.0,
   "untreated_score": -0.5,
   "noise_impact": 1.5,
   "noise_time": 0.05,
@@ -86,139 +86,77 @@
    "label": "Reference solution",
    "group": "reference",
    "n": 10,
-   "mean": 0.8942,
-   "std": 0.0337,
-   "min": 0.8286,
-   "max": 0.949,
+   "mean": 0.8236,
+   "std": 0.0562,
+   "min": 0.7143,
+   "max": 0.9149,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.949
+     "score": 0.9149
     },
     {
      "seed": 2,
      "run": 1,
-     "score": 0.9275
+     "score": 0.8792
     },
     {
      "seed": 3,
      "run": 1,
-     "score": 0.905
+     "score": 0.8418
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.9056
+     "score": 0.8426
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.9024
+     "score": 0.8372
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.8859
+     "score": 0.8098
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.8749
+     "score": 0.7915
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.8286
+     "score": 0.7143
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.912
+     "score": 0.8533
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.8506
+     "score": 0.751
     }
    ]
-  },
-  {
-   "id": "claude-sonnet-5-5",
-   "label": "claude-sonnet-5-5",
-   "group": "frontier",
-   "n": 9,
-   "mean": 0.7973,
-   "std": 0.1441,
-   "min": 0.4485,
-   "max": 0.9197,
-   "scores": [
-    {
-     "seed": 1,
-     "run": 1,
-     "score": 0.8458
-    },
-    {
-     "seed": 1,
-     "run": 2,
-     "score": 0.4485
-    },
-    {
-     "seed": 1,
-     "run": 3,
-     "score": 0.9039
-    },
-    {
-     "seed": 2,
-     "run": 1,
-     "score": 0.8772
-    },
-    {
-     "seed": 2,
-     "run": 2,
-     "score": 0.6756
-    },
-    {
-     "seed": 2,
-     "run": 3,
-     "score": 0.8306
-    },
-    {
-     "seed": 3,
-     "run": 1,
-     "score": 0.7627
-    },
-    {
-     "seed": 3,
-     "run": 2,
-     "score": 0.9197
-    },
-    {
-     "seed": 3,
-     "run": 3,
-     "score": 0.9114
-    }
-   ],
-   "lost": {
-    "lost_experiments": 0.0477,
-    "lost_fitting": 0.0175,
-    "lost_aiming": 0.0647
-   }
   },
   {
    "id": "quick_fit",
    "label": "Stops fitting early",
    "group": "heuristic",
    "n": 10,
-   "mean": 0.6792,
-   "std": 0.3421,
+   "mean": 0.5987,
+   "std": 0.3076,
    "min": 0.0,
-   "max": 0.9324,
+   "max": 0.8874,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.0005
+     "score": 0.0
     },
     {
      "seed": 2,
@@ -228,48 +166,48 @@
     {
      "seed": 3,
      "run": 1,
-     "score": 0.8341
+     "score": 0.7235
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.7771
+     "score": 0.6286
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.9324
+     "score": 0.8874
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.8778
+     "score": 0.7964
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.834
+     "score": 0.7234
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.7907
+     "score": 0.6512
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.8739
+     "score": 0.7898
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.8719
+     "score": 0.7865
     }
    ],
    "lost": {
-    "lost_experiments": -0.0044,
-    "lost_fitting": 0.2209,
-    "lost_aiming": -0.0016
+    "lost_experiments": -0.0073,
+    "lost_fitting": 0.2355,
+    "lost_aiming": -0.0033
    }
   },
   {
@@ -277,66 +215,66 @@
    "label": "One flight condition",
    "group": "heuristic",
    "n": 10,
-   "mean": 0.5499,
-   "std": 0.2262,
-   "min": 0.1863,
-   "max": 0.8542,
+   "mean": 0.3881,
+   "std": 0.2224,
+   "min": 0.0568,
+   "max": 0.7571,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.8041
+     "score": 0.6736
     },
     {
      "seed": 2,
      "run": 1,
-     "score": 0.2813
+     "score": 0.2021
     },
     {
      "seed": 3,
      "run": 1,
-     "score": 0.8542
+     "score": 0.7571
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.5254
+     "score": 0.2624
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.6505
+     "score": 0.4176
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.7136
+     "score": 0.5226
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.5022
+     "score": 0.3467
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.7179
+     "score": 0.5298
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.2637
+     "score": 0.1126
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.1863
+     "score": 0.0568
     }
    ],
    "lost": {
-    "lost_experiments": 0.3493,
-    "lost_fitting": -0.0046,
-    "lost_aiming": -0.0004
+    "lost_experiments": 0.4428,
+    "lost_fitting": -0.0071,
+    "lost_aiming": -0.0002
    }
   },
   {
@@ -344,66 +282,66 @@
    "label": "Assumes uniform wind",
    "group": "heuristic",
    "n": 10,
-   "mean": 0.563,
-   "std": 0.1742,
-   "min": 0.169,
-   "max": 0.8012,
+   "mean": 0.3672,
+   "std": 0.1676,
+   "min": 0.0439,
+   "max": 0.6686,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.7488
+     "score": 0.5814
     },
     {
      "seed": 2,
      "run": 1,
-     "score": 0.611
+     "score": 0.38
     },
     {
      "seed": 3,
      "run": 1,
-     "score": 0.6617
+     "score": 0.4361
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.6121
+     "score": 0.3541
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.5608
+     "score": 0.2842
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.8012
+     "score": 0.6686
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.4219
+     "score": 0.348
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.6202
+     "score": 0.3737
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.4235
+     "score": 0.2017
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.169
+     "score": 0.0439
     }
    ],
    "lost": {
-    "lost_experiments": 0.2749,
-    "lost_fitting": 0.0555,
-    "lost_aiming": 0.0008
+    "lost_experiments": 0.3687,
+    "lost_fitting": 0.0877,
+    "lost_aiming": -0.0
    }
   },
   {
@@ -411,65 +349,65 @@
    "label": "Ignores the smoke column",
    "group": "heuristic",
    "n": 10,
-   "mean": 0.3641,
-   "std": 0.12,
-   "min": 0.0962,
-   "max": 0.5423,
+   "mean": 0.2047,
+   "std": 0.1158,
+   "min": 0.0,
+   "max": 0.4108,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.5423
+     "score": 0.4108
     },
     {
      "seed": 2,
      "run": 1,
-     "score": 0.4212
+     "score": 0.1979
     },
     {
      "seed": 3,
      "run": 1,
-     "score": 0.421
+     "score": 0.2671
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.0962
+     "score": 0.0
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.4377
+     "score": 0.3108
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.2852
+     "score": 0.117
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.4201
+     "score": 0.2062
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.4281
+     "score": 0.2863
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.3475
+     "score": 0.188
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.2422
+     "score": 0.0633
     }
    ],
    "lost": {
-    "lost_experiments": 0.4408,
-    "lost_fitting": 0.0892,
+    "lost_experiments": 0.5782,
+    "lost_fitting": 0.0406,
     "lost_aiming": 0.0
    }
   },
@@ -478,10 +416,10 @@
    "label": "Trusts priors",
    "group": "heuristic",
    "n": 10,
-   "mean": 0.1326,
-   "std": 0.1566,
+   "mean": 0.0392,
+   "std": 0.0684,
    "min": 0.0,
-   "max": 0.4633,
+   "max": 0.2151,
    "scores": [
     {
      "seed": 1,
@@ -496,22 +434,22 @@
     {
      "seed": 3,
      "run": 1,
-     "score": 0.3956
+     "score": 0.1088
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.1183
+     "score": 0.0638
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.0515
+     "score": 0.0
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.067
+     "score": 0.0
     },
     {
      "seed": 7,
@@ -521,22 +459,22 @@
     {
      "seed": 8,
      "run": 1,
-     "score": 0.4633
+     "score": 0.2151
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.1478
+     "score": 0.0
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.0826
+     "score": 0.0044
     }
    ],
    "lost": {
-    "lost_experiments": 0.5965,
-    "lost_fitting": 0.1651,
+    "lost_experiments": 0.7036,
+    "lost_fitting": 0.0808,
     "lost_aiming": 0.0
    }
   },
@@ -545,60 +483,60 @@
    "label": "Stop early",
    "group": "baseline",
    "n": 10,
-   "mean": 0.0569,
-   "std": 0.0137,
-   "min": 0.0286,
-   "max": 0.0805,
+   "mean": 0.0301,
+   "std": 0.0193,
+   "min": 0.0,
+   "max": 0.0675,
    "scores": [
     {
      "seed": 1,
      "run": 1,
-     "score": 0.0805
+     "score": 0.0675
     },
     {
      "seed": 2,
      "run": 1,
-     "score": 0.0675
+     "score": 0.0459
     },
     {
      "seed": 3,
      "run": 1,
-     "score": 0.0649
+     "score": 0.0415
     },
     {
      "seed": 4,
      "run": 1,
-     "score": 0.0534
+     "score": 0.0223
     },
     {
      "seed": 5,
      "run": 1,
-     "score": 0.0514
+     "score": 0.0189
     },
     {
      "seed": 6,
      "run": 1,
-     "score": 0.0562
+     "score": 0.027
     },
     {
      "seed": 7,
      "run": 1,
-     "score": 0.0658
+     "score": 0.0429
     },
     {
      "seed": 8,
      "run": 1,
-     "score": 0.0286
+     "score": 0.0
     },
     {
      "seed": 9,
      "run": 1,
-     "score": 0.0585
+     "score": 0.0308
     },
     {
      "seed": 10,
      "run": 1,
-     "score": 0.0424
+     "score": 0.004
     }
    ]
   },

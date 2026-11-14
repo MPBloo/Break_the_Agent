@@ -17,7 +17,7 @@ class Config:
     n_targets: int = 5            # real drops, one per target, no feedback
 
     # Scoring
-    score_radius: float = 10.0    # m; a hit at distance d scores max(0, 1 - d/score_radius)
+    score_radius: float = 6.0     # m; a hit at distance d scores max(0, 1 - d/score_radius)
     untreated_score: float = -0.5  # a target that never receives a drop
 
     # Observation noise on calibration drops (1 sigma)
