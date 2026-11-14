@@ -8,11 +8,13 @@ Configuration (environment variables, or a .env file read by run_llm.py):
     LLM_MODEL           model id, default claude-opus-5-5
     LLM_EFFORT          low | medium | high | xhigh | max, default high
     LLM_FALLBACKS       "off" disables server-side refusal fallbacks (on by default where supported)
+    BOMBER_PROGRESS     set to 1 to print a progress line every ten requests
 """
 from __future__ import annotations
 
 import json
 import os
+import sys
 
 import anthropic
 
@@ -127,6 +129,10 @@ def make_agent(cfg: ClaudeConfig | None = None):
                                 "is_error": "error" in result})
             if results:
                 messages.append({"role": "user", "content": results})   # all results in one message
+                if os.environ.get("BOMBER_PROGRESS") and usage["requests"] % 10 == 0:
+                    print(f"  [{cfg.model}] {n_calls} tool calls, {usage['prompt_tokens']:,} tokens in "
+                          f"({usage['cache_read_tokens']:,} from cache), {usage['completion_tokens']:,} out",
+                          file=sys.stderr, flush=True)
                 continue
             nudges += 1
             if nudges > 3:
