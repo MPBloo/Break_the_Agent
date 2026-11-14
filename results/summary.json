@@ -1,0 +1,792 @@
+{
+ "config": {
+  "n_test_drops": 10,
+  "n_calculations": 120,
+  "n_targets": 5,
+  "score_radius": 10.0,
+  "untreated_score": -0.5,
+  "noise_impact": 1.5,
+  "noise_time": 0.05,
+  "noise_wind_speed": 0.5,
+  "noise_wind_dir": 4.0,
+  "altitude_min": 30.0,
+  "altitude_max": 150.0,
+  "speed_min": 45.0,
+  "speed_max": 80.0,
+  "map_half_size": 2500.0,
+  "calibration_radius": 500.0,
+  "true_drag": [
+   0.025,
+   0.045
+  ],
+  "true_wind_speed": [
+   5.0,
+   13.0
+  ],
+  "true_shear": [
+   0.12,
+   0.38
+  ],
+  "true_veer": [
+   -35.0,
+   35.0
+  ],
+  "true_updraft": [
+   3.0,
+   6.5
+  ],
+  "hyp_drag": [
+   0.01,
+   0.08
+  ],
+  "hyp_wind_speed": [
+   0.0,
+   20.0
+  ],
+  "hyp_shear": [
+   0.0,
+   0.6
+  ],
+  "hyp_veer": [
+   -60.0,
+   60.0
+  ],
+  "hyp_updraft": [
+   0.0,
+   15.0
+  ],
+  "target_dist": [
+   1000.0,
+   1900.0
+  ],
+  "target_separation": 350.0,
+  "target_intensity": [
+   0.5,
+   1.4
+  ],
+  "window_heading": 20.0,
+  "window_altitude": 20.0,
+  "window_speed": 10.0
+ },
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "agents": [
+  {
+   "id": "reference",
+   "label": "Reference solution",
+   "group": "reference",
+   "n": 10,
+   "mean": 0.8942,
+   "std": 0.0337,
+   "min": 0.8286,
+   "max": 0.949,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.949
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.9275
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.905
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.9056
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.9024
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.8859
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.8749
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.8286
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.912
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.8506
+    }
+   ]
+  },
+  {
+   "id": "quick_fit",
+   "label": "Stops fitting early",
+   "group": "heuristic",
+   "n": 10,
+   "mean": 0.6792,
+   "std": 0.3421,
+   "min": 0.0,
+   "max": 0.9324,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0005
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.8341
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.7771
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.9324
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.8778
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.834
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.7907
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.8739
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.8719
+    }
+   ],
+   "lost": {
+    "lost_experiments": -0.0044,
+    "lost_fitting": 0.2209,
+    "lost_aiming": -0.0016
+   }
+  },
+  {
+   "id": "single_condition",
+   "label": "One flight condition",
+   "group": "heuristic",
+   "n": 10,
+   "mean": 0.5499,
+   "std": 0.2262,
+   "min": 0.1863,
+   "max": 0.8542,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.8041
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.2813
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.8542
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.5254
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.6505
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.7136
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.5022
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.7179
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.2637
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.1863
+    }
+   ],
+   "lost": {
+    "lost_experiments": 0.3493,
+    "lost_fitting": -0.0046,
+    "lost_aiming": -0.0004
+   }
+  },
+  {
+   "id": "uniform_wind",
+   "label": "Assumes uniform wind",
+   "group": "heuristic",
+   "n": 10,
+   "mean": 0.563,
+   "std": 0.1742,
+   "min": 0.169,
+   "max": 0.8012,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.7488
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.611
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.6617
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.6121
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.5608
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.8012
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.4219
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.6202
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.4235
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.169
+    }
+   ],
+   "lost": {
+    "lost_experiments": 0.2749,
+    "lost_fitting": 0.0555,
+    "lost_aiming": 0.0008
+   }
+  },
+  {
+   "id": "ignores_smoke",
+   "label": "Ignores the smoke column",
+   "group": "heuristic",
+   "n": 10,
+   "mean": 0.3641,
+   "std": 0.12,
+   "min": 0.0962,
+   "max": 0.5423,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.5423
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.4212
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.421
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0962
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.4377
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.2852
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.4201
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.4281
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.3475
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.2422
+    }
+   ],
+   "lost": {
+    "lost_experiments": 0.4408,
+    "lost_fitting": 0.0892,
+    "lost_aiming": 0.0
+   }
+  },
+  {
+   "id": "textbook",
+   "label": "Trusts priors",
+   "group": "heuristic",
+   "n": 10,
+   "mean": 0.1326,
+   "std": 0.1566,
+   "min": 0.0,
+   "max": 0.4633,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.3956
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.1183
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0515
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.067
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.4633
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.1478
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0826
+    }
+   ],
+   "lost": {
+    "lost_experiments": 0.5965,
+    "lost_fitting": 0.1651,
+    "lost_aiming": 0.0
+   }
+  },
+  {
+   "id": "stop_early",
+   "label": "Stop early",
+   "group": "baseline",
+   "n": 10,
+   "mean": 0.0569,
+   "std": 0.0137,
+   "min": 0.0286,
+   "max": 0.0805,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0805
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0675
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0649
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0534
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0514
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.0562
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0658
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.0286
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.0585
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0424
+    }
+   ]
+  },
+  {
+   "id": "calibrate_only",
+   "label": "Calibrate, never drop",
+   "group": "baseline",
+   "n": 10,
+   "mean": 0.0,
+   "std": 0.0,
+   "min": 0.0,
+   "max": 0.0,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "id": "overhead",
+   "label": "Release overhead",
+   "group": "baseline",
+   "n": 10,
+   "mean": 0.0,
+   "std": 0.0,
+   "min": 0.0,
+   "max": 0.0,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "id": "random_policy",
+   "label": "Random actions",
+   "group": "baseline",
+   "n": 10,
+   "mean": 0.0,
+   "std": 0.0,
+   "min": 0.0,
+   "max": 0.0,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "id": "do_nothing",
+   "label": "Do nothing",
+   "group": "baseline",
+   "n": 10,
+   "mean": 0.0,
+   "std": 0.0,
+   "min": 0.0,
+   "max": 0.0,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 4,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 5,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 6,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 7,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 8,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 9,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 10,
+     "run": 1,
+     "score": 0.0
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,740 @@
+<title>Water Bomber Debrief</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: a single column of panels. Summary first (scores, then where points were lost),
+   then a workbench for one mission: the scene on the left, its readouts on the right. */
+:root {
+  --bg: #f4f6f9; --surface: #fcfcfd; --ink: #10151c; --ink-2: #47505d; --muted: #7b8492;
+  --grid: #e3e6eb; --axis: #c3c8d1; --border: rgba(16, 21, 28, .11); --wash: rgba(42, 120, 214, .08);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --bar-neutral: #9aa5b4;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  --smoke: rgba(71, 80, 93, .13); --test: #5598e7;
+  --font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0e11; --surface: #17191d; --ink: #eef0f3; --ink-2: #c0c5cd; --muted: #868d98;
+    --grid: #2a2d33; --axis: #3b3f47; --border: rgba(255, 255, 255, .11); --wash: rgba(57, 135, 229, .14);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --bar-neutral: #5d6673;
+    --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+    --smoke: rgba(192, 197, 205, .13); --test: #5598e7;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0e11; --surface: #17191d; --ink: #eef0f3; --ink-2: #c0c5cd; --muted: #868d98;
+  --grid: #2a2d33; --axis: #3b3f47; --border: rgba(255, 255, 255, .11); --wash: rgba(57, 135, 229, .14);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --bar-neutral: #5d6673;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  --smoke: rgba(192, 197, 205, .13); --test: #5598e7;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+h2 { font-size: 19px; font-weight: 600; }
+h3 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); font-family: var(--font-body); }
+p { margin: 0; }
+.lede { max-width: 68ch; color: var(--ink-2); font-size: 15px; }
+.head { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink-2); background: var(--surface); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sub { color: var(--ink-2); max-width: 78ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+.lk { width: 16px; height: 0; border-top: 2px solid; display: inline-block; flex: none; }
+.ring { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid; display: inline-block; flex: none; }
+
+/* horizontal bar rows */
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 5px 6px; border-radius: 6px; outline: none; }
+.row:hover, .row:focus-visible { background: var(--wash); }
+.row-label { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.row-label .name { font-weight: 600; }
+.row-label .kind { font-size: 12px; color: var(--muted); }
+.plot { position: relative; height: 38px; margin-right: 46px; }
+.plot .gl { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid); }
+.plot .gl.base { background: var(--axis); }
+.bar { position: absolute; left: 0; top: 5px; height: 14px; border-radius: 0 4px 4px 0; min-width: 1px; }
+.val { position: absolute; top: 3px; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 6px; }
+.dot { position: absolute; top: 24px; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; border: 2px solid var(--surface); opacity: .8; }
+.stack { position: absolute; left: 0; top: 9px; height: 18px; display: flex; gap: 2px; }
+.stack i { display: block; height: 100%; min-width: 0; }
+.stack i:last-child { border-radius: 0 4px 4px 0; }
+.axis-row { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 14px; padding: 0 6px; }
+.axis { position: relative; height: 18px; margin-right: 46px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.axis span { position: absolute; transform: translateX(-50%); top: 2px; }
+.axis span:first-child { transform: none; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scroll-x { overflow-x: auto; min-width: 0; }
+details > summary { cursor: pointer; color: var(--ink-2); font-size: 13px; width: fit-content; }
+details[open] > summary { margin-bottom: 10px; }
+summary:focus-visible, button:focus-visible, select:focus-visible, tr:focus-visible, canvas:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; font-weight: 600; min-width: 0; }
+select { font: inherit; font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; max-width: 100%; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; color: var(--ink-2); background: var(--surface); border: 0; border-right: 1px solid var(--axis); padding: 6px 10px; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--wash); }
+
+.bench { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; }
+.scene { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+canvas#scene { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); cursor: grab; touch-action: pan-y; display: block; }
+canvas#scene:active { cursor: grabbing; }
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile .k { font-size: 12px; color: var(--muted); }
+.tile .v { font-size: 22px; font-weight: 600; font-family: var(--font-display); line-height: 1.2; }
+.tile .v small { font-size: 13px; font-weight: 500; color: var(--muted); font-family: var(--font-body); }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td, tr.pick[aria-selected="true"] td { background: var(--wash); }
+.trio { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .8fr) minmax(0, 1.4fr); gap: 20px; }
+.block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.block svg { width: 100%; height: auto; display: block; }
+.note { font-size: 12.5px; color: var(--muted); }
+.banner { border: 1px solid var(--border); border-left: 3px solid var(--crit); border-radius: 6px; padding: 8px 12px; font-size: 13px; color: var(--ink-2); }
+
+/* transcript */
+.log { max-height: 460px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+.log .e { display: grid; grid-template-columns: 34px 96px minmax(0, 1fr); gap: 2px 10px; padding: 6px 10px; border-bottom: 1px solid var(--grid); font-size: 12.5px; }
+.log .e:last-child { border-bottom: 0; }
+.log .n { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.log .t { font-family: var(--font-mono); font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.log .b { min-width: 0; overflow-wrap: anywhere; color: var(--ink-2); }
+.log .b .res { color: var(--ink); }
+.log .e.op .n { color: var(--s2); font-weight: 600; }
+.log .model { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-2); }
+.log .model pre { white-space: pre-wrap; font: inherit; margin: 6px 0 0; }
+.err { color: var(--crit); font-weight: 600; }
+pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12px; line-height: 1.55; margin: 0; overflow-x: auto; color: var(--ink-2); }
+
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: 0 6px 22px rgba(0, 0, 0, .16); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; max-width: 280px; line-height: 1.4; }
+.tip b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.tip .d { color: var(--ink-2); }
+
+@media (max-width: 860px) {
+  .bench, .trio { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  h1 { font-size: 25px; }
+  .panel { padding: 14px; }
+  .row, .axis-row { grid-template-columns: minmax(0, 1fr); }
+  .axis-row > :first-child { display: none; }
+  .log .e { grid-template-columns: 26px minmax(0, 1fr); }
+  .log .e .b { grid-column: 2; }
+}
+@media (prefers-reduced-motion: no-preference) { .row { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">Mission debrief</div>
+    <h1>Water Bomber</h1>
+    <p class="lede">An agent has ten test drops to learn how a load falls through today's air: drag, a wind that strengthens and turns with altitude, and the updraft above a fire. It then commits to one blind drop on each of five fires. The mission score is the mean hit quality over the five targets, from 0 to 1.</p>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <section class="panel" aria-labelledby="h-scores">
+    <h2 id="h-scores">Mission score by agent</h2>
+    <p class="sub">Bars show the mean over all episodes. Each dot is one episode, so the spread across seeds and repeated runs is visible.</p>
+    <div class="legend" id="scores-legend"></div>
+    <div class="rows" id="scores"></div>
+    <details>
+      <summary>Table view</summary>
+      <div class="scroll-x"><table id="scores-table"></table></div>
+    </details>
+  </section>
+
+  <section class="panel" aria-labelledby="h-lost" id="lost-panel">
+    <h2 id="h-lost">Where the points were lost</h2>
+    <p class="sub">For each episode two counterfactuals are replayed on the same world with the reference's own code: the reference fitting and aiming on the agent's test drops, then the reference aiming with the agent's final hypothesis. The differences split the gap to the reference into three decisions.</p>
+    <div class="legend" id="lost-legend"></div>
+    <div class="rows" id="lost"></div>
+    <details>
+      <summary>Table view</summary>
+      <div class="scroll-x"><table id="lost-table"></table></div>
+    </details>
+  </section>
+
+  <section class="panel" aria-labelledby="h-ep">
+    <h2 id="h-ep">One mission, step by step</h2>
+    <div class="controls">
+      <label class="field" for="sel-agent">Agent<select id="sel-agent"></select></label>
+      <label class="field" for="sel-ep">Episode<select id="sel-ep"></select></label>
+      <div class="field">Look at<div class="seg" id="seg-focus" role="group" aria-label="Part of the map"></div></div>
+      <div class="field">View<div class="seg" id="seg-view" role="group" aria-label="Camera"></div></div>
+    </div>
+    <div id="ep-banner" class="banner" hidden></div>
+    <div class="bench">
+      <div class="scene">
+        <canvas id="scene" tabindex="0" aria-label="3D view of drops, drag to rotate"></canvas>
+        <div class="legend">
+          <span><i class="lk" style="border-color:var(--s1)"></i>real drop, true path</span>
+          <span><i class="lk" style="border-color:var(--test)"></i>test drop</span>
+          <span><i class="lk" style="border-color:var(--crit)"></i>miss</span>
+          <span><i class="ring" style="border-color:var(--good)"></i>scoring circle</span>
+          <span><i class="sw" style="background:var(--smoke);border:1px solid var(--axis)"></i>smoke column</span>
+          <span><i class="sw" style="background:var(--s2);border-radius:50%"></i>fire</span>
+        </div>
+        <p class="note">Drag to rotate. The true paths are known to the environment only: no agent ever sees them.</p>
+      </div>
+      <div class="side">
+        <div class="tiles" id="tiles"></div>
+        <div class="block">
+          <h3>Targets</h3>
+          <div class="scroll-x"><table id="targets"></table></div>
+        </div>
+      </div>
+    </div>
+    <div class="trio">
+      <div class="block">
+        <h3>The air: truth and the agent's last hypothesis</h3>
+        <div class="scroll-x"><table id="hyp"></table></div>
+      </div>
+      <div class="block">
+        <h3>Wind by altitude</h3>
+        <div id="wind"></div>
+        <div class="legend" id="wind-legend"></div>
+        <p class="note">Each line shows where the wind blows and how fast, at 30, 90 and 150 m. Longer lines are faster wind; lines that fan out mean the wind turns with altitude.</p>
+      </div>
+      <div class="block">
+        <h3>Fit error after each compare call</h3>
+        <div id="fit"></div>
+        <p class="note" id="fit-note"></p>
+      </div>
+    </div>
+    <div class="block">
+      <h3>Transcript</h3>
+      <div class="log" id="log" tabindex="0"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>Briefing given to every agent</summary>
+      <pre class="brief" id="brief"></pre>
+    </details>
+  </section>
+</div>
+<div id="tip" class="tip" hidden></div>
+
+<script>
+const DATA = /*__REPORT_DATA__*/null;
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, attrs, kids) => {
+    const n = document.createElement(tag);
+    for (const k in (attrs || {})) {
+      if (k === "text") n.textContent = attrs[k];
+      else if (k === "style") n.style.cssText = attrs[k];
+      else if (k === "cls") n.className = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    }
+    (kids || []).forEach((c) => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+    return n;
+  };
+  const svg = (tag, attrs) => {
+    const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const k in (attrs || {})) { if (k === "text") n.textContent = attrs[k]; else n.setAttribute(k, attrs[k]); }
+    return n;
+  };
+  const f2 = (v) => (v == null ? "–" : Number(v).toFixed(2));
+  const f1 = (v) => (v == null ? "–" : Number(v).toFixed(1));
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const CFG = DATA.meta.config;
+  const GROUP = { reference: "Reference", frontier: "Frontier model", heuristic: "Scripted heuristic", baseline: "Baseline" };
+  const barColor = (g) => (g === "reference" ? "var(--s1)" : g === "frontier" ? "var(--s2)" : "var(--bar-neutral)");
+  const status = (s) => (s >= 0.8 ? "var(--good)" : s >= 0.5 ? "var(--warn)" : s >= 0.2 ? "var(--serious)" : "var(--crit)");
+  const pill = (s) => el("span", { cls: "pill" }, [el("i", { style: "background:" + status(s) }), f2(s)]);
+
+  // ---------------------------------------------------------------- tooltip
+  const tip = $("tip");
+  function showTip(evt, build) {
+    tip.replaceChildren();
+    build(tip);
+    tip.hidden = false;
+    const r = evt.currentTarget.getBoundingClientRect();
+    const x = evt.clientX != null && evt.type !== "focus" ? evt.clientX : r.left + r.width / 2;
+    const y = evt.clientY != null && evt.type !== "focus" ? evt.clientY : r.top;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 14)) + "px";
+    tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y - h - 12 < 8 ? y + 18 : y - h - 12)) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  function bindTip(node, build) {
+    node.addEventListener("pointermove", (e) => showTip(e, build));
+    node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("focus", (e) => showTip(e, build));
+    node.addEventListener("blur", hideTip);
+  }
+
+  // ----------------------------------------------------------------- header
+  const seeds = DATA.meta.seeds;
+  [`Seeds ${seeds[0]} to ${seeds[seeds.length - 1]}`, `${CFG.n_test_drops} test drops`, `${CFG.n_calculations} calculations`,
+   `${CFG.n_targets} targets`, `Scoring radius ${CFG.score_radius} m`, `Generated ${DATA.meta.generated}`]
+    .forEach((t) => $("chips").appendChild(el("span", { cls: "chip", text: t })));
+  $("brief").textContent = DATA.briefing;
+
+  // ------------------------------------------------------------ score chart
+  function gridlines(plot) {
+    [0, 0.25, 0.5, 0.75, 1].forEach((t, i) => plot.appendChild(el("i", { cls: "gl" + (i === 0 ? " base" : ""), style: `left:${t * 100}%` })));
+  }
+  function axisRow() {
+    const ax = el("div", { cls: "axis" });
+    [0, 0.25, 0.5, 0.75, 1].forEach((t) => ax.appendChild(el("span", { style: `left:${t * 100}%`, text: String(t) })));
+    return el("div", { cls: "axis-row" }, [el("div"), ax]);
+  }
+  const groupsPresent = [...new Set(DATA.agents.map((a) => a.group))];
+  [["reference", "Reference solution"], ["frontier", "Frontier model"], ["heuristic", "Scripted heuristics and baselines"]]
+    .filter(([g]) => groupsPresent.includes(g) || (g === "heuristic" && groupsPresent.includes("baseline")))
+    .forEach(([g, label]) => $("scores-legend").appendChild(el("span", {}, [el("i", { cls: "sw", style: "background:" + barColor(g) }), label])));
+
+  DATA.agents.forEach((a) => {
+    const plot = el("div", { cls: "plot" });
+    gridlines(plot);
+    plot.appendChild(el("div", { cls: "bar", style: `width:${a.mean * 100}%;background:${barColor(a.group)}` }));
+    plot.appendChild(el("span", { cls: "val", style: `left:${a.mean * 100}%`, text: f2(a.mean) }));
+    a.episodes.forEach((i) => plot.appendChild(el("i", { cls: "dot", style: `left:${DATA.episodes[i].score * 100}%;background:${barColor(a.group)}` })));
+    const row = el("div", { cls: "row", tabindex: "0" }, [
+      el("div", { cls: "row-label" }, [el("span", { cls: "name", text: a.label }), el("span", { cls: "kind", text: GROUP[a.group] })]), plot]);
+    bindTip(row, (t) => {
+      t.appendChild(el("div", {}, [el("b", { text: f2(a.mean) }), " mean over " + a.n + " episode" + (a.n > 1 ? "s" : "")]));
+      t.appendChild(el("div", { cls: "d", text: `min ${f2(a.min)} · max ${f2(a.max)} · std ${f2(a.std)}` }));
+      t.appendChild(el("div", { cls: "d", text: a.desc }));
+    });
+    row.addEventListener("click", () => { selectAgent(a.id); $("h-ep").scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("scores").appendChild(row);
+  });
+  $("scores").appendChild(axisRow());
+  {
+    const t = $("scores-table");
+    t.appendChild(el("tr", {}, ["Agent", "Kind", "Episodes", "Mean", "Std", "Min", "Max"].map((h, i) => el("th", { cls: i > 1 ? "num" : "", text: h }))));
+    DATA.agents.forEach((a) => t.appendChild(el("tr", {}, [
+      el("td", { text: a.label }), el("td", { text: GROUP[a.group] }), el("td", { cls: "num", text: String(a.n) }),
+      el("td", { cls: "num", text: a.mean.toFixed(3) }), el("td", { cls: "num", text: a.std.toFixed(3) }),
+      el("td", { cls: "num", text: a.min.toFixed(3) }), el("td", { cls: "num", text: a.max.toFixed(3) })])));
+  }
+
+  // ------------------------------------------------------ attribution chart
+  const LOST = [["kept", "Score kept", "var(--s1)"], ["lost_experiments", "Lost to the choice of experiments", "var(--s2)"],
+                ["lost_fitting", "Lost while fitting", "var(--s3)"], ["lost_aiming", "Lost while aiming", "var(--s4)"]];
+  const withLost = DATA.agents.filter((a) => a.lost);
+  if (!withLost.length) $("lost-panel").hidden = true;
+  LOST.forEach(([, label, c]) => $("lost-legend").appendChild(el("span", {}, [el("i", { cls: "sw", style: "background:" + c }), label])));
+  withLost.forEach((a) => {
+    const plot = el("div", { cls: "plot" });
+    gridlines(plot);
+    const stack = el("div", { cls: "stack" });
+    const vals = { kept: a.mean, ...a.lost };
+    let total = 0;
+    LOST.forEach(([k, label, c]) => {
+      const v = Math.max(0, vals[k]);
+      if (v < 0.004) return;
+      total += v;
+      const seg = el("i", { style: `width:${v * 100}%;background:${c}`, tabindex: "0", "aria-label": `${label}: ${f2(vals[k])}` });
+      bindTip(seg, (t) => { t.appendChild(el("div", {}, [el("b", { text: f2(vals[k]) }), " " + label.toLowerCase()])); t.appendChild(el("div", { cls: "d", text: a.label })); });
+      stack.appendChild(seg);
+    });
+    stack.style.width = "100%";
+    stack.style.right = "auto";
+    plot.appendChild(stack);
+    $("lost").appendChild(el("div", { cls: "row" }, [
+      el("div", { cls: "row-label" }, [el("span", { cls: "name", text: a.label }), el("span", { cls: "kind", text: `scores ${f2(a.mean)}, reference ${f2(total)}` })]), plot]));
+  });
+  if (withLost.length) {
+    $("lost").appendChild(axisRow());
+    const t = $("lost-table");
+    t.appendChild(el("tr", {}, ["Agent", "Score", "Lost: experiments", "Lost: fitting", "Lost: aiming"].map((h, i) => el("th", { cls: i ? "num" : "", text: h }))));
+    withLost.forEach((a) => t.appendChild(el("tr", {}, [el("td", { text: a.label }), el("td", { cls: "num", text: f2(a.mean) }),
+      el("td", { cls: "num", text: f2(a.lost.lost_experiments) }), el("td", { cls: "num", text: f2(a.lost.lost_fitting) }), el("td", { cls: "num", text: f2(a.lost.lost_aiming) })])));
+  }
+
+  // --------------------------------------------------------------- explorer
+  const HYP = [["drag", "Drag", "1/m", 4], ["wind_speed", "Wind speed at 100 m", "m/s", 2], ["wind_dir", "Wind direction at 100 m", "°", 1],
+               ["shear", "Shear exponent", "", 3], ["veer", "Veer", "°/100 m", 1], ["updraft", "Updraft", "m/s", 2]];
+  const state = { agent: null, ep: null, focus: "t1", yaw: -35, elev: 32, zoom: 1 };
+  const selAgent = $("sel-agent"), selEp = $("sel-ep");
+  DATA.agents.forEach((a) => selAgent.appendChild(el("option", { value: a.id, text: `${a.label} (${f2(a.mean)})` })));
+  selAgent.addEventListener("change", () => selectAgent(selAgent.value));
+  selEp.addEventListener("change", () => selectEpisode(Number(selEp.value)));
+
+  function selectAgent(id) {
+    const a = DATA.agents.find((x) => x.id === id);
+    state.agent = a;
+    selAgent.value = id;
+    selEp.replaceChildren();
+    const multi = new Set(a.episodes.map((i) => DATA.episodes[i].seed)).size < a.episodes.length;
+    a.episodes.forEach((i) => {
+      const e = DATA.episodes[i];
+      selEp.appendChild(el("option", { value: String(i), text: `Seed ${e.seed}${multi ? " · run " + e.run : ""} · ${f2(e.score)}` }));
+    });
+    selectEpisode(a.episodes[0]);
+  }
+  function lastHypothesis(ep) {
+    for (const tool of ["simulate", "compare"]) {
+      for (let i = ep.log.length - 1; i >= 0; i--) {
+        const e = ep.log[i];
+        if (e[2] === tool && !e[4].error) { const h = {}; HYP.forEach(([k]) => { h[k] = e[3][k]; }); return h; }
+      }
+    }
+    return null;
+  }
+  function selectEpisode(i) {
+    const ep = DATA.episodes[i];
+    state.ep = ep;
+    selEp.value = String(i);
+    ep._hyp = ep._hyp || lastHypothesis(ep);
+    const hasDrop = (id) => ep.drops.some((d) => d.target === id);
+    if (state.focus !== "cal" && state.focus !== "map" && !hasDrop(Number(state.focus.slice(1)))) {
+      const first = ep.drops[0];
+      state.focus = first ? "t" + first.target : (ep.tests.length ? "cal" : "map");
+    }
+    renderFocusButtons(); renderTiles(); renderTargets(); renderHyp(); renderWind(); renderFit(); renderLog(); draw();
+    const b = $("ep-banner");
+    const msgs = [];
+    if (ep.error) msgs.push("The agent stopped on an error: " + ep.error);
+    if (ep.replay_ok === false) msgs.push("Replaying this transcript does not reproduce its stored score.");
+    b.hidden = !msgs.length;
+    b.textContent = msgs.join(" ");
+  }
+
+  function renderFocusButtons() {
+    const seg = $("seg-focus");
+    seg.replaceChildren();
+    const opts = [["cal", "Calibration"]].concat(state.ep.targets.map((t) => ["t" + t.id, "Target " + t.id])).concat([["map", "Whole map"]]);
+    opts.forEach(([id, label]) => {
+      const b = el("button", { type: "button", "aria-pressed": String(state.focus === id), text: label });
+      b.addEventListener("click", () => { state.focus = id; state.zoom = 1; renderFocusButtons(); renderTargets(); draw(); });
+      seg.appendChild(b);
+    });
+  }
+  const VIEWS = [["3D", -35, 32], ["Top", 0, 90], ["Side", 0, 4]];
+  function renderViewButtons() {
+    const seg = $("seg-view");
+    seg.replaceChildren();
+    VIEWS.forEach(([label, yaw, elev]) => {
+      const b = el("button", { type: "button", "aria-pressed": String(state.yaw === yaw && state.elev === elev), text: label });
+      b.addEventListener("click", () => { state.yaw = yaw; state.elev = elev; renderViewButtons(); draw(); });
+      seg.appendChild(b);
+    });
+  }
+  renderViewButtons();
+
+  function renderTiles() {
+    const ep = state.ep, c = ep.counts, box = $("tiles");
+    box.replaceChildren();
+    const tile = (k, v, small) => box.appendChild(el("div", { cls: "tile" }, [el("span", { cls: "k", text: k }), el("span", { cls: "v" }, [v, small ? el("small", { text: " " + small }) : ""])]));
+    tile("Mission score", f2(ep.score));
+    const ref = DATA.agents.find((a) => a.group === "reference");
+    const refEp = ref && ref.episodes.map((i) => DATA.episodes[i]).find((e) => e.seed === ep.seed);
+    if (refEp && state.agent.group !== "reference") tile("Reference, same seed", f2(refEp.score));
+    tile("Test drops", String(c.test_drops), "of " + CFG.n_test_drops);
+    tile("Calculations", String(c.calculations), "of " + CFG.n_calculations);
+    tile("Real drops", String(c.real_drops), "of " + CFG.n_targets);
+  }
+
+  function renderTargets() {
+    const ep = state.ep, t = $("targets");
+    t.replaceChildren();
+    t.appendChild(el("tr", {}, [["Target", ""], ["Intensity", "num"], ["Imposed run-in", ""], ["Miss", "num"], ["Score", "num"]].map(([h, c]) => el("th", { cls: c, text: h }))));
+    ep.targets.forEach((tg) => {
+      const s = ep.scored.find((x) => x.id === tg.id);
+      const run = `${tg.heading_range[0]}–${tg.heading_range[1]}° · ${tg.altitude_range[0]}–${tg.altitude_range[1]} m · ${tg.speed_range[0]}–${tg.speed_range[1]} m/s`;
+      const tr = el("tr", { cls: "pick", tabindex: "0", "aria-selected": String(state.focus === "t" + tg.id) }, [
+        el("td", { text: "Target " + tg.id }), el("td", { cls: "num", text: tg.intensity.toFixed(2) }), el("td", { text: run }),
+        el("td", { cls: "num", text: s.treated ? f1(s.distance) + " m" : "no drop" }),
+        el("td", { cls: "num" }, [s.treated ? pill(s.score) : el("span", { cls: "err", text: String(s.score) })])]);
+      const go = () => { state.focus = "t" + tg.id; state.zoom = 1; renderFocusButtons(); renderTargets(); draw(); };
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+      t.appendChild(tr);
+    });
+  }
+
+  function renderHyp() {
+    const ep = state.ep, t = $("hyp"), h = ep._hyp;
+    t.replaceChildren();
+    t.appendChild(el("tr", {}, [["Unknown", ""], ["Truth", "num"], ["Agent", "num"], ["Error", "num"]].map(([x, c]) => el("th", { cls: c, text: x }))));
+    HYP.forEach(([k, label, unit, d]) => {
+      let err = "–";
+      if (h) {
+        let e = h[k] - ep.air[k];
+        if (k === "wind_dir") e = ((e + 540) % 360) - 180;
+        err = (e > 0 ? "+" : "") + e.toFixed(d);
+      }
+      t.appendChild(el("tr", {}, [el("td", {}, [label, unit ? el("span", { cls: "note", text: " " + unit }) : ""]),
+        el("td", { cls: "num", text: ep.air[k].toFixed(d) }), el("td", { cls: "num", text: h ? Number(h[k]).toFixed(d) : "–" }), el("td", { cls: "num", text: err })]));
+    });
+    if (!h) t.appendChild(el("tr", {}, [el("td", { colspan: "4", cls: "note", text: "This agent never evaluated a hypothesis." })]));
+  }
+
+  const windAt = (air, z) => {
+    const s = air.wind_speed * Math.pow(z / 100, air.shear), a = (air.wind_dir + air.veer * (z - 100) / 100) * Math.PI / 180;
+    return { s, dir: ((air.wind_dir + air.veer * (z - 100) / 100) % 360 + 360) % 360, x: s * Math.sin(a), y: s * Math.cos(a) };
+  };
+  function renderWind() {
+    const ep = state.ep, box = $("wind"), W = 220, c = W / 2, R = 82;
+    box.replaceChildren();
+    const g = svg("svg", { viewBox: `0 0 ${W} ${W}`, role: "img", "aria-label": "Wind vectors at 30, 90 and 150 m" });
+    const sets = [["Truth", ep.air, css("--s1")]].concat(ep._hyp ? [["Agent's hypothesis", ep._hyp, css("--s2")]] : []);
+    let mx = 1;
+    sets.forEach(([, air]) => [30, 90, 150].forEach((z) => { mx = Math.max(mx, windAt(air, z).s); }));
+    const ring = Math.max(2, Math.ceil(mx / 2) * 2), placed = [];
+    [ring / 2, ring].forEach((r) => g.appendChild(svg("circle", { cx: c, cy: c, r: r / ring * R, fill: "none", stroke: css("--grid"), "stroke-width": 1 })));
+    g.appendChild(svg("text", { x: c + 3, y: c - R - 4, fill: css("--muted"), "font-size": 10.5, text: "N" }));
+    g.appendChild(svg("text", { x: c + R * 0.71 + 3, y: c + R * 0.71 + 11, fill: css("--muted"), "font-size": 10.5, text: ring + " m/s" }));
+    g.appendChild(svg("line", { x1: c, y1: c - R - 2, x2: c, y2: c + R, stroke: css("--grid"), "stroke-width": 1 }));
+    g.appendChild(svg("line", { x1: c - R, y1: c, x2: c + R, y2: c, stroke: css("--grid"), "stroke-width": 1 }));
+    sets.forEach(([name, air, col], si) => [30, 90, 150].forEach((z) => {
+      const w = windAt(air, z), x = c + w.x / ring * R, y = c - w.y / ring * R;
+      g.appendChild(svg("line", { x1: c, y1: c, x2: x, y2: y, stroke: col, "stroke-width": 2, "stroke-linecap": "round" }));
+      const dot = svg("circle", { cx: x, cy: y, r: 4.5, fill: col, stroke: css("--surface"), "stroke-width": 2, tabindex: 0 });
+      bindTip(dot, (t) => { t.appendChild(el("div", {}, [el("b", { text: f1(w.s) + " m/s" }), ` toward ${Math.round(w.dir)}°`])); t.appendChild(el("div", { cls: "d", text: `${name}, at ${z} m` })); });
+      g.appendChild(dot);
+      const lx = x + (w.x >= 0 ? 8 : -8), ly = y + 4;
+      if (si === 0 && placed.every((q) => Math.hypot(q[0] - lx, q[1] - ly) > 15)) {
+        placed.push([lx, ly]);
+        g.appendChild(svg("text", { x: lx, y: ly, fill: css("--ink-2"), "font-size": 10.5, "text-anchor": w.x >= 0 ? "start" : "end", text: z + " m" }));
+      }
+    }));
+    box.appendChild(g);
+    const lg = $("wind-legend");
+    lg.replaceChildren();
+    sets.forEach(([name, , col]) => lg.appendChild(el("span", {}, [el("i", { cls: "lk", style: "border-color:" + col }), name])));
+  }
+
+  function renderFit() {
+    const ep = state.ep, box = $("fit"), note = $("fit-note");
+    box.replaceChildren();
+    const pts = ep.log.filter((e) => e[2] === "compare" && !e[4].error).map((e, i) => ({ i: i + 1, n: e[0], v: Math.max(0.3, e[4].mean_miss), raw: e[4].mean_miss, h: e[3] }));
+    if (!pts.length) { note.textContent = "This agent never called compare."; return; }
+    const W = 520, H = 230, m = { l: 40, r: 54, t: 10, b: 28 };
+    const g = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Mean miss on test drops after each compare call" });
+    const top = Math.max(10, ...pts.map((p) => p.v)), lo = Math.log(0.3), hi = Math.log(top * 1.15);
+    const X = (i) => m.l + (pts.length === 1 ? 0.5 : (i - 1) / (pts.length - 1)) * (W - m.l - m.r);
+    const Y = (v) => m.t + (1 - (Math.log(v) - lo) / (hi - lo)) * (H - m.t - m.b);
+    [0.3, 1, 3, 10, 30, 100, 300].filter((t) => t <= top * 1.15).forEach((t) => {
+      g.appendChild(svg("line", { x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t), stroke: css("--grid"), "stroke-width": 1 }));
+      g.appendChild(svg("text", { x: m.l - 6, y: Y(t) + 3.5, "text-anchor": "end", fill: css("--muted"), "font-size": 11, text: t + " m" }));
+    });
+    g.appendChild(svg("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: css("--axis"), "stroke-width": 1 }));
+    const ticks = [...new Set([1, Math.ceil(pts.length / 2), pts.length])];
+    ticks.forEach((i) => g.appendChild(svg("text", { x: X(i), y: H - m.b + 15, "text-anchor": "middle", fill: css("--muted"), "font-size": 11, text: "call " + i })));
+    g.appendChild(svg("path", { d: pts.map((p, k) => (k ? "L" : "M") + X(p.i).toFixed(1) + " " + Y(p.v).toFixed(1)).join(""), fill: "none", stroke: css("--s1"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    const last = pts[pts.length - 1];
+    g.appendChild(svg("circle", { cx: X(last.i), cy: Y(last.v), r: 4.5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }));
+    g.appendChild(svg("text", { x: X(last.i) + 8, y: Y(last.v) + 4, fill: css("--ink"), "font-size": 12, "font-weight": 600, text: f1(last.raw) + " m" }));
+    const cross = svg("line", { y1: m.t, y2: H - m.b, stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" });
+    const mark = svg("circle", { r: 4.5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2, visibility: "hidden" });
+    g.appendChild(cross); g.appendChild(mark);
+    const hit = svg("rect", { x: m.l - 6, y: m.t, width: W - m.l - m.r + 12, height: H - m.t - m.b, fill: "transparent" });
+    hit.addEventListener("pointermove", (e) => {
+      const r = g.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+      let best = pts[0];
+      pts.forEach((p) => { if (Math.abs(X(p.i) - px) < Math.abs(X(best.i) - px)) best = p; });
+      cross.setAttribute("x1", X(best.i)); cross.setAttribute("x2", X(best.i)); cross.setAttribute("visibility", "visible");
+      mark.setAttribute("cx", X(best.i)); mark.setAttribute("cy", Y(best.v)); mark.setAttribute("visibility", "visible");
+      showTip(e, (t) => {
+        t.appendChild(el("div", {}, [el("b", { text: f1(best.raw) + " m" }), " mean miss"]));
+        t.appendChild(el("div", { cls: "d", text: `compare call ${best.i} (step ${best.n})` }));
+        t.appendChild(el("div", { cls: "d", text: hypText(best.h) }));
+      });
+    });
+    hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); mark.setAttribute("visibility", "hidden"); hideTip(); });
+    g.appendChild(hit);
+    box.appendChild(g);
+    note.textContent = `Mean distance between predicted and observed impacts of the test drops, log scale. ${pts.length} calls, from ${f1(pts[0].raw)} m to ${f1(last.raw)} m. Observation noise alone is about 2 m.`;
+  }
+
+  // -------------------------------------------------------------- transcript
+  const num = (v, d) => (typeof v === "number" ? v.toFixed(d) : String(v));
+  const hypText = (a) => `drag ${num(a.drag, 4)} · wind ${num(a.wind_speed, 1)} m/s → ${num(a.wind_dir, 0)}° · shear ${num(a.shear, 2)} · veer ${num(a.veer, 0)} · updraft ${num(a.updraft, 1)}`;
+  const dropText = (a) => `heading ${num(a.heading, 0)}° · ${num(a.altitude, 0)} m · ${num(a.speed, 0)} m/s · release (${num(a.x, 0)}, ${num(a.y, 0)})`;
+  function argsText(tool, a) {
+    if (tool === "compare") return hypText(a);
+    if (tool === "simulate") return dropText(a) + " | " + hypText(a);
+    if (tool === "test_drop") return dropText(a);
+    if (tool === "drop") return `target ${a.target} · ` + dropText(a);
+    const keys = Object.keys(a || {});
+    return keys.length ? JSON.stringify(a).slice(0, 200) : "";
+  }
+  function resText(tool, r) {
+    if (tool === "test_drop") return `impact (${r.impact.x}, ${r.impact.y}) · fell ${r.fall_time} s · ${r.entered_smoke ? "through smoke" : "clear air"} · wind ${r.wind_at_aircraft.speed} m/s → ${r.wind_at_aircraft.toward_deg}° at ${r.wind_at_aircraft.altitude} m`;
+    if (tool === "compare") return `mean miss ${r.mean_miss} m · mean |dt| ${r.mean_abs_dt} s · ${r.calculations_left} calculations left`;
+    if (tool === "simulate") return `predicted impact (${r.impact.x}, ${r.impact.y}) · ${r.fall_time} s${r.enters_smoke ? " · through smoke" : ""}`;
+    if (tool === "declare_done") return `mission over, score ${r.mission_score}`;
+    return r.status && typeof r.status === "string" ? r.status : "ok";
+  }
+  function renderLog() {
+    const ep = state.ep, box = $("log");
+    box.replaceChildren();
+    const notes = {};
+    ep.notes.forEach((n) => { (notes[n.before_call] = notes[n.before_call] || []).push(n.text); });
+    const model = (text) => {
+      const d = el("details", {}, [el("summary", { text: "Model: " + text.slice(0, 110) + (text.length > 110 ? "…" : "") }), el("pre", { text })]);
+      return el("div", { cls: "e" }, [el("div", { cls: "model" }, [d])]);
+    };
+    ep.log.forEach(([n, phase, tool, args, res], k) => {
+      (notes[k + 1] || []).forEach((t) => box.appendChild(model(t)));
+      const body = el("div", { cls: "b" });
+      const a = argsText(tool, args);
+      if (a) body.appendChild(el("div", { text: a }));
+      body.appendChild(res.error ? el("div", {}, [el("span", { cls: "err", text: "Refused: " }), res.error]) : el("div", { cls: "res", text: resText(tool, res) }));
+      box.appendChild(el("div", { cls: "e" + (phase === "operation" ? " op" : "") }, [el("div", { cls: "n", text: String(n) }), el("div", { cls: "t", text: tool }), body]));
+    });
+    Object.keys(notes).filter((k) => Number(k) > ep.log.length).forEach((k) => notes[k].forEach((t) => box.appendChild(model(t))));
+    if (!ep.log.length) box.appendChild(el("div", { cls: "e" }, [el("div", { cls: "model", text: "No tool call was made." })]));
+    box.scrollTop = 0;
+  }
+
+  // ------------------------------------------------------------------- scene
+  const cv = $("scene"), ctx = cv.getContext("2d");
+  function focusBox() {
+    const ep = state.ep;
+    if (state.focus === "cal") return { cx: 0, cy: 0, r: 560, step: 250 };
+    if (state.focus === "map") {
+      const far = Math.max(600, ...ep.targets.map((t) => Math.hypot(t.x, t.y)));
+      return { cx: 0, cy: 0, r: far + 200, step: 500 };
+    }
+    const tg = ep.targets.find((t) => "t" + t.id === state.focus), d = ep.drops.find((x) => x.target === tg.id);
+    let r = tg.smoke_radius + 30, cx = tg.x, cy = tg.y;
+    if (d) {
+      const xs = d.path.map((p) => p[0]).concat([tg.x - tg.smoke_radius, tg.x + tg.smoke_radius]), ys = d.path.map((p) => p[1]).concat([tg.y - tg.smoke_radius, tg.y + tg.smoke_radius]);
+      cx = (Math.min(...xs) + Math.max(...xs)) / 2; cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      r = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 + 45;
+    }
+    return { cx, cy, r, step: r > 220 ? 100 : 50 };
+  }
+  function draw() {
+    const ep = state.ep;
+    if (!ep) return;
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const C = {}; ["ink", "ink-2", "muted", "grid", "axis", "surface", "s1", "s2", "good", "crit", "smoke", "test", "bg"].forEach((k) => { C[k] = css("--" + k); });
+    const f = focusBox(), s = Math.min(w, h) / (2 * f.r) * state.zoom;
+    const yaw = state.yaw * Math.PI / 180, e = state.elev * Math.PI / 180, cy = Math.cos(yaw), sy = Math.sin(yaw), se = Math.sin(e), ce = Math.cos(e);
+    const zc = 55 * ce;
+    const P = (x, y, z) => { const dx = x - f.cx, dy = y - f.cy; return [w / 2 + (dx * cy - dy * sy) * s, h / 2 - ((dx * sy + dy * cy) * se + z * ce - zc) * s]; };
+    const line = (pts, col, lw, alpha) => {
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(); ctx.globalAlpha = 1;
+    };
+    const circlePts = (x, y, r, z) => { const o = []; for (let i = 0; i <= 56; i++) { const a = i / 56 * 2 * Math.PI; o.push(P(x + r * Math.cos(a), y + r * Math.sin(a), z)); } return o; };
+    const dot = (p, r, col) => { ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 2 * Math.PI); ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.surface; ctx.stroke(); };
+    const label = (p, text, dx, dy, col, bold) => {
+      ctx.font = (bold ? "600 " : "") + "12px system-ui, sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = C.bg; ctx.lineJoin = "round";
+      ctx.strokeText(text, p[0] + dx, p[1] + dy); ctx.fillStyle = col || C["ink-2"]; ctx.fillText(text, p[0] + dx, p[1] + dy);
+    };
+    // ground grid
+    const G = Math.ceil(f.r * 1.5 / f.step) * f.step, gx = Math.round(f.cx / f.step) * f.step, gy = Math.round(f.cy / f.step) * f.step;
+    for (let v = -G; v <= G; v += f.step) {
+      line([P(gx + v, gy - G, 0), P(gx + v, gy + G, 0)], C.grid, 1);
+      line([P(gx - G, gy + v, 0), P(gx + G, gy + v, 0)], C.grid, 1);
+    }
+    // fires and smoke columns
+    const fires = [{ x: 0, y: 0, r: 50, name: "Calibration fire", id: 0 }].concat(ep.targets.map((t) => ({ x: t.x, y: t.y, r: t.smoke_radius, name: "T" + t.id, id: t.id })));
+    const zoomed = state.focus !== "map";
+    fires.forEach((fi) => {
+      const ring = circlePts(fi.x, fi.y, fi.r, 0);
+      ctx.beginPath(); ring.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fillStyle = C.smoke; ctx.fill();
+      line(ring, C.axis, 1);
+      if (zoomed && state.elev < 80) {
+        line(circlePts(fi.x, fi.y, fi.r, 150), C.axis, 1, 0.6);
+        [1, -1].forEach((k) => line([P(fi.x + k * fi.r * cy, fi.y - k * fi.r * sy, 0), P(fi.x + k * fi.r * cy, fi.y - k * fi.r * sy, 150)], C.axis, 1, 0.6));
+      }
+      if (fi.id && zoomed) line(circlePts(fi.x, fi.y, CFG.score_radius, 0), C.good, 1.5);
+    });
+    // test drops
+    if (state.focus !== "map" || !ep.drops.length) {
+      ep.tests.forEach((t) => {
+        line(t.path.map((p) => P(p[0], p[1], p[2])), C.test, 1.5, 0.85);
+        line([P(t.x, t.y, t.altitude), P(t.x, t.y, 0)], C.axis, 1, 0.7);
+        const o = P(t.obs.x, t.obs.y, 0);
+        ctx.beginPath(); ctx.arc(o[0], o[1], 4, 0, 2 * Math.PI); ctx.fillStyle = C.surface; ctx.fill(); ctx.strokeStyle = C.test; ctx.lineWidth = 1.5; ctx.stroke();
+        if (state.focus === "cal") label(P(t.x, t.y, t.altitude), String(t.id), 5, -5, C["ink-2"]);
+      });
+    }
+    // real drops
+    ep.drops.forEach((d) => {
+      const tg = ep.targets.find((t) => t.id === d.target), sc = ep.scored.find((x) => x.id === d.target);
+      const a = d.heading * Math.PI / 180, back = zoomed ? 70 : 0;
+      line(d.path.map((p) => P(p[0], p[1], 0)), C.s1, 1, 0.3);
+      if (back) line([P(d.x - back * Math.sin(a), d.y - back * Math.cos(a), d.altitude), P(d.x, d.y, d.altitude)], C["ink-2"], 1.5);
+      line([P(d.x, d.y, d.altitude), P(d.x, d.y, 0)], C.axis, 1);
+      line(d.path.map((p) => P(p[0], p[1], p[2])), C.s1, 2);
+      const imp = P(sc.impact.x, sc.impact.y, 0), ctr = P(tg.x, tg.y, 0);
+      line([imp, ctr], C.crit, 2);
+      dot(P(d.x, d.y, d.altitude), 3.5, C["ink-2"]);
+      dot(imp, 4.5, C.s1);
+      if ("t" + d.target === state.focus) {
+        label(imp, `miss ${f1(sc.distance)} m`, 9, 15, C.ink, true);
+        label(P(d.x, d.y, d.altitude), `release · ${Math.round(d.altitude)} m · ${Math.round(d.speed)} m/s`, 8, -8, C["ink-2"]);
+      }
+    });
+    fires.forEach((fi) => {
+      dot(P(fi.x, fi.y, 0), fi.id ? 4 : 5, C.s2);
+      if (state.focus === "map" || state.focus === "cal" || "t" + fi.id === state.focus) label(P(fi.x, fi.y, 0), fi.name, 8, -8, C.ink, true);
+    });
+    // scale bar and north arrow
+    const nice = [10, 20, 50, 100, 200, 500, 1000].find((m) => m * s >= 60) || 1000;
+    line([[16, h - 18], [16 + nice * s, h - 18]], C["ink-2"], 2);
+    ctx.font = "12px system-ui, sans-serif"; ctx.fillStyle = C["ink-2"]; ctx.fillText(nice >= 1000 ? nice / 1000 + " km" : nice + " m", 16, h - 26);
+    const n0 = P(f.cx, f.cy, 0), n1 = P(f.cx, f.cy + 1, 0), nl = Math.hypot(n1[0] - n0[0], n1[1] - n0[1]);
+    if (nl > 1e-6 && se > 0.15) {
+      const ux = (n1[0] - n0[0]) / nl, uy = (n1[1] - n0[1]) / nl, ox = w - 30, oy = 34;
+      line([[ox - ux * 12, oy - uy * 12], [ox + ux * 12, oy + uy * 12]], C["ink-2"], 1.5);
+      line([[ox + ux * 12 - (ux - uy * 0.6) * 6, oy + uy * 12 - (uy + ux * 0.6) * 6], [ox + ux * 12, oy + uy * 12], [ox + ux * 12 - (ux + uy * 0.6) * 6, oy + uy * 12 - (uy - ux * 0.6) * 6]], C["ink-2"], 1.5);
+      ctx.fillStyle = C["ink-2"]; ctx.font = "600 11px system-ui, sans-serif"; ctx.fillText("N", ox + ux * 20 - 4, oy + uy * 20 + 4);
+    }
+  }
+  let drag = null;
+  cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, yaw: state.yaw, elev: state.elev }; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    state.yaw = drag.yaw + (e.clientX - drag.x) * 0.5;
+    state.elev = Math.max(2, Math.min(90, drag.elev + (e.clientY - drag.y) * 0.4));
+    renderViewButtons(); draw();
+  });
+  ["pointerup", "pointercancel"].forEach((t) => cv.addEventListener(t, () => { drag = null; }));
+  cv.addEventListener("keydown", (e) => {
+    const k = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, 6], ArrowDown: [0, -6] }[e.key];
+    if (!k) return;
+    e.preventDefault();
+    state.yaw += k[0]; state.elev = Math.max(2, Math.min(90, state.elev + k[1]));
+    renderViewButtons(); draw();
+  });
+  window.addEventListener("resize", draw);
+  const redrawAll = () => { if (state.ep) { renderWind(); renderFit(); draw(); } };
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawAll);
+  new MutationObserver(redrawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // opening state: the first frontier model if any, else the reference
+  const open = DATA.agents.find((a) => a.group === "frontier") || DATA.agents[0];
+  selectAgent(open.id);
+})();
+</script>
