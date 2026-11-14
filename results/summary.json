@@ -144,6 +144,28 @@
    ]
   },
   {
+   "id": "claude-sonnet-5-5",
+   "label": "claude-sonnet-5-5",
+   "group": "frontier",
+   "n": 1,
+   "mean": 0.8458,
+   "std": 0.0,
+   "min": 0.8458,
+   "max": 0.8458,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.8458
+    }
+   ],
+   "lost": {
+    "lost_experiments": 0.1123,
+    "lost_fitting": 0.0178,
+    "lost_aiming": -0.0269
+   }
+  },
+  {
    "id": "quick_fit",
    "label": "Stops fitting early",
    "group": "heuristic",
