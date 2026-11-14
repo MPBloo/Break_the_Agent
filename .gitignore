@@ -4,3 +4,4 @@ harbor/tasks/
 data/
 .venv/
 .env
+video/out/
