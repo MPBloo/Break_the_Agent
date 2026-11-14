@@ -59,7 +59,7 @@ def _compact_episode(rec: dict) -> dict:
 def build_report(groups: list[dict], summary: dict, out_path: str, fragment_path: str | None = None) -> int:
     """Write the viewer. Returns its size in bytes. `fragment_path`, if given, also receives the
     page without the document skeleton (the form expected when publishing it as a hosted page)."""
-    episodes, agents = [], []
+    episodes, agents, legacy = [], [], []
     stats = {a["id"]: a for a in summary["agents"]}
     for g in groups:
         idx = []
@@ -67,7 +67,7 @@ def build_report(groups: list[dict], summary: dict, out_path: str, fragment_path
             idx.append(len(episodes))
             episodes.append(_compact_episode(rec))
         s = stats[g["id"]]
-        agents.append({"id": g["id"], "label": g["label"], "group": g["group"], "desc": g["desc"],
+        (legacy if g["group"] == "legacy" else agents).append({"id": g["id"], "label": g["label"], "group": g["group"], "desc": g["desc"],
                        "n": s["n"], "mean": s["mean"], "std": s["std"], "min": s["min"], "max": s["max"],
                        "lost": s.get("lost"), "refused": s.get("refused", 0), "episodes": idx})
     data = {
@@ -75,6 +75,7 @@ def build_report(groups: list[dict], summary: dict, out_path: str, fragment_path
                  "generated": datetime.date.today().isoformat()},
         "briefing": briefing(DEFAULT),
         "agents": agents,
+        "legacy": legacy,
         "episodes": episodes,
     }
     with open(os.path.join(HERE, "report_template.html")) as f:

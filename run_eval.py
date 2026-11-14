@@ -11,7 +11,8 @@ What it does:
   3. Loads stored frontier-model transcripts from results/llm/ (produced by run_llm.py), replays
      each one call by call on a fresh world and checks the stored score is reproduced.
   4. Attributes every non-reference episode's lost points to experiments / fitting / aiming.
-  5. Writes results/summary.md, results/summary.json and results/report.html.
+  5. Writes results/presented.md (headline table), results/summary.md (every run), results/summary.json
+     and results/report.html.
 """
 from __future__ import annotations
 
@@ -60,6 +61,58 @@ def _stats(scores: list[float]) -> dict:
     return {"n": len(scores), "mean": round(st.mean(scores), 4),
             "std": round(st.pstdev(scores), 4) if len(scores) > 1 else 0.0,
             "min": round(min(scores), 4), "max": round(max(scores), 4)}
+
+
+def _load_presented(out_dir: str) -> list[dict]:
+    """Which model runs make the headline results (results/presented.json). Without the file, every
+    run is presented under its own name."""
+    path = os.path.join(out_dir, "presented.json")
+    if not os.path.isfile(path):
+        return [{"id": m, "label": m} for m in sorted({r["agent"] for r in _load_llm(out_dir)})]
+    with open(path) as f:
+        return json.load(f)["models"]
+
+
+def _presented_table(groups: list[dict], ref_by_seed: dict, path: str) -> None:
+    """results/presented.md: the headline table, one row per presented agent, each model compared with
+    the reference on the seeds it actually played."""
+    ref = next(g for g in groups if g["group"] == "reference")
+    lines = ["# Headline results", "",
+             "Each model is compared with the reference on the same worlds (same seeds). A mission ended by the "
+             "model provider's safety filter scores 0 and is counted separately: it says nothing about how the "
+             "model plays.", "",
+             "| Agent | Missions | Mean score | Range | Reference on the same seeds | Missions below the reference "
+             "| Refused by safety filter | Lost: experiments | Lost: fitting | Lost: aiming |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
+    ref_scores = [r["score"] for r in ref["episodes"]]
+    lines.append(f"| **Reference solution** | {len(ref_scores)} seeds | **{st.mean(ref_scores):.2f}** | "
+                 f"{min(ref_scores):.2f} to {max(ref_scores):.2f} | | | | | | |")
+    for g in groups:
+        if g["group"] != "frontier":
+            continue
+        eps = g["episodes"]
+        played = [e for e in eps if (e.get("agent_extra") or {}).get("stopped") != "refusal"]
+        refused = len(eps) - len(played)
+        if not played:
+            lines.append(f"| {g['label']} | {len(eps)} | not measurable | | | | {refused} of {len(eps)} | | | |")
+            continue
+        sc = [e["score"] for e in played]
+        seeds = sorted({e["seed"] for e in played})
+        ref_same = st.mean(ref_by_seed[s] for s in seeds)
+        below = sum(e["score"] < ref_by_seed[e["seed"]] for e in played)
+        atts = [e["attribution"] for e in played if e.get("attribution")]
+        lost = [f"{st.mean(x[k] for x in atts):.2f}" if atts else "" for k in ("lost_experiments", "lost_fitting", "lost_aiming")]
+        lines.append(f"| {g['label']} | {len(played)} | {st.mean(sc):.2f} | {min(sc):.2f} to {max(sc):.2f} | "
+                     f"{ref_same:.2f} | {below} of {len(played)} | {refused} of {len(eps)} | " + " | ".join(lost) + " |")
+    for g in groups:
+        if g["group"] in ("heuristic", "baseline"):
+            sc = [e["score"] for e in g["episodes"]]
+            lines.append(f"| {g['label']} ({g['group']}) | {len(sc)} seeds | {st.mean(sc):.2f} | "
+                         f"{min(sc):.2f} to {max(sc):.2f} | | | | | | |")
+    lines += ["", "Lost columns: mean points lost against the reference, split by the decision that lost them "
+              "(see bomber/analysis.py). Model runs not listed in results/presented.json are in summary.md.", ""]
+    with open(path, "w") as f:
+        f.write("\n".join(lines))
 
 
 def main() -> int:
@@ -122,10 +175,17 @@ def main() -> int:
     by_model: dict[str, list[dict]] = {}
     for rec in llm:
         by_model.setdefault(rec["agent"], []).append(rec)
-    for model, rs in by_model.items():
-        groups.insert(1, {"id": model, "label": model, "group": "frontier",
-                          "desc": "Frontier model in a plain tool-calling loop: no shell, no code execution.",
-                          "episodes": rs})
+    presented = _load_presented(a.out)
+    order = [m["id"] for m in presented]
+    names = {m["id"]: m["label"] for m in presented}
+    frontier = [{"id": m, "label": names[m], "group": "frontier",
+                 "desc": "Frontier model in a plain tool-calling loop: no shell, no code execution.",
+                 "episodes": by_model[m]} for m in order if m in by_model]
+    legacy = [{"id": m, "label": m, "group": "legacy",
+               "desc": "Earlier run, kept for the record (earlier briefing or repeated trial).",
+               "episodes": rs} for m, rs in sorted(by_model.items()) if m not in names]
+    groups[1:1] = frontier
+    groups.extend(legacy)
 
     summary = {"config": DEFAULT.as_dict(), "seeds": seeds, "agents": []}
     for g in groups:
@@ -163,6 +223,7 @@ def main() -> int:
     with open(os.path.join(a.out, "summary.md"), "w") as f:
         f.write("\n".join(lines))
 
+    _presented_table(groups, ref_by_seed, os.path.join(a.out, "presented.md"))
     report = build_report(groups, summary, os.path.join(a.out, "report.html"), a.fragment)
     print(f"[5/5] Wrote results/summary.md, results/summary.json, results/report.html ({report // 1024} KB).")
     print()

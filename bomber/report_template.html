@@ -378,11 +378,17 @@ const DATA = /*__REPORT_DATA__*/null;
   const state = { agent: null, ep: null, focus: "t1", yaw: -35, elev: 32, zoom: 1 };
   const selAgent = $("sel-agent"), selEp = $("sel-ep");
   DATA.agents.forEach((a) => selAgent.appendChild(el("option", { value: a.id, text: `${a.label} (${f2(a.mean)})` })));
+  if ((DATA.legacy || []).length) {
+    const og = el("optgroup", { label: "Earlier runs" });
+    DATA.legacy.forEach((a) => og.appendChild(el("option", { value: a.id, text: `${a.label} (${f2(a.mean)})` })));
+    selAgent.appendChild(og);
+  }
+  const ALL_AGENTS = DATA.agents.concat(DATA.legacy || []);
   selAgent.addEventListener("change", () => selectAgent(selAgent.value));
   selEp.addEventListener("change", () => selectEpisode(Number(selEp.value)));
 
   function selectAgent(id) {
-    const a = DATA.agents.find((x) => x.id === id);
+    const a = ALL_AGENTS.find((x) => x.id === id);
     state.agent = a;
     selAgent.value = id;
     selEp.replaceChildren();

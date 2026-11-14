@@ -1,0 +1,9 @@
+{
+  "_comment": "Model runs shown in the headline results, in this order, with their display names. Runs in results/llm/ that are not listed here stay in summary.md and in the viewer under 'Earlier runs'.",
+  "models": [
+    {"id": "claude-opus-5-5-canadair-2026-11-14", "label": "Claude Opus 5.5"},
+    {"id": "claude-sonnet-5-5-canadair-2026-11-14", "label": "Claude Sonnet 5.5"},
+    {"id": "claude-sonnet-4-5-20250929-canadair-2026-11-14", "label": "Claude Sonnet 4.5"},
+    {"id": "claude-haiku-5-5-canadair-2026-11-14", "label": "Claude Haiku 5.5"}
+  ]
+}
