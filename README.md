@@ -1,13 +1,13 @@
-# Water Bomber
+# Canadair Firefighting
 
 A reinforcement-learning environment about a skill agents are asked for all the time and rarely
 tested on: **learn an unknown system with a few costly experiments, then act once, without
 feedback.**
 
-An air tanker must hit five spot fires with one water drop each. Where a load lands depends on
-the air it falls through: its drag, a wind that strengthens and turns with altitude, and the
-updraft above a fire. None of this is known in advance. The agent gets ten test drops over a
-calibration fire to find out, then commits to five real drops it never sees land.
+A Canadair-style firefighting aircraft must deliver water to five wildfire hotspots. Where a
+water load lands depends on the air it falls through: its drag, a wind that strengthens and turns
+with altitude, and the updraft above a fire. None of this is known in advance. The agent gets ten
+test drops over a calibration fire to find out, then commits to five real drops it never sees land.
 
 ```bash
 python run_eval.py
@@ -16,8 +16,9 @@ python run_eval.py
 That one command plays the reference solution, five scripted heuristics and five baselines on
 ten seeds, checks the result against the real MCP server, replays any stored frontier-model
 transcripts, and writes `results/summary.md` and `results/report.html` (an interactive viewer:
-scores, 3D replay of every drop, transcript of every mission). It takes about 30 seconds and
-needs only Python 3.10+. `pip install -r requirements.txt` adds the MCP server check.
+scores, 3D replay of every drop, transcript of every mission). The scripted evaluation takes
+about 30 seconds; stored transcript replay and attribution add time as the results folder grows.
+It needs only Python 3.10+. `pip install -r requirements.txt` adds the MCP server check.
 
 ## Results
 
@@ -27,7 +28,9 @@ seed, same score.
 | Agent | What it is | Mean | Min | Max |
 |---|---|---|---|---|
 | **Reference solution** | same tools, same budgets, better method | **0.82** | 0.71 | 0.91 |
-| Claude Sonnet 5.5 | frontier model, tool loop, no shell; 9 missions on seeds 1 to 3 | 0.71 | 0.62 | 0.86 |
+| Claude Sonnet 5.5, previous wording | 9 missions on seeds 1 to 3 | 0.708 | 0.618 | 0.859 |
+| Claude Sonnet 5.5, Canadair wording | 9 missions on seeds 1 to 3 | 0.730 | 0.616 | 0.842 |
+| Claude Sonnet 4.5, Canadair prompt | 9 missions on seeds 1 to 3 | 0.315 | 0.000 | 0.604 |
 | Claude Haiku 5.5, completed missions | 3 of 9 missions on seeds 1 to 3 (see below) | 0.81 | 0.64 | 0.94 |
 | Stops fitting early | reference experiments, one coarse fitting pass | 0.60 | 0.00 | 0.89 |
 | One flight condition | ten tests at the same heading, altitude, speed | 0.39 | 0.06 | 0.76 |
@@ -42,8 +45,9 @@ seed, same score.
 
 On 60 seeds the reference averages 0.825, with a minimum of 0.67.
 
-**Against frontier models.** On the three seeds the models played, the reference scores 0.88
-(0.91, 0.88, 0.84).
+**Earlier frontier-model runs.** These results used the previous mission wording and should be
+rerun before drawing conclusions about the Canadair framing. On the three seeds the models played,
+the reference scores 0.88 (0.91, 0.88, 0.84).
 
 - Claude Sonnet 5.5 scores 0.71 and is below the reference in 8 of 9 missions (one mission at
   0.86 against 0.84). Its losses come from fitting (0.16) and from the choice of experiments
@@ -51,13 +55,29 @@ On 60 seeds the reference averages 0.825, with a minimum of 0.67.
 - Claude Haiku 5.5 is not a usable comparison yet. Six of its nine missions were ended by the
   model provider's safety filter before any real drop, and score 0. The three it completed score
   0.64, 0.94 and 0.85, two of them above the reference on that seed.
-- Claude Sonnet 4.5 could not play at all: the same filter stops its first request every time.
+- Under the previous mission wording, Claude Sonnet 4.5 refused its first request every time.
 
-So the gap to a frontier model exists but is not robust: it holds for Sonnet 5.5 on this sample,
-and three completed Haiku 5.5 missions say the reference can be matched. The safety-filter
-refusals are a problem of the environment's framing (computing an aerial release point under wind
-resembles dispersion modelling), not of the models' play, and no wording change was attempted to
-get around them. Results recorded earlier with a 10 m radius are in `results/archive/radius-10m/`.
+**Canadair-framing retest.** Haiku 5.5 was run twice for nine missions each on seeds 1 to 3,
+with high effort and the updated wildfire-suppression briefing. All 18 runs were stopped by the
+provider's safety filter before any water drop, so they do not measure the model's ability to
+play. The wording describes the firefighting task directly and was not tuned to evade the filter.
+The earlier three completed Haiku missions remain historical results under the previous wording.
+Results recorded earlier with a 10 m radius are in `results/archive/radius-10m/`.
+
+Sonnet 5.5 completed all nine Canadair-briefing runs at high effort without refusals. It averaged 0.730
+(0.616 to 0.842), below the reference's 0.879 on the same seeds in all nine runs. Attribution
+points mainly to fitting (0.142); experiment choice accounts for 0.037, while aiming is -0.031.
+The negative aiming figure means its final aim was slightly better than the reference's
+counterfactual aim using Sonnet's fitted hypothesis. This does not support making aiming the
+primary difficulty lever.
+
+Claude Sonnet 4.5 completed all nine runs with the Canadair briefing and scored 0.315 on average
+(0.000 to 0.604), below the reference's 0.879 on those same seeds in all nine runs. Its previous
+first-request refusals did not recur. The reason for the difference is not exposed by the API logs.
+
+The repeated gap is now supported by both Sonnet models under the current wording, though the
+sample covers only three seeds. Haiku could not complete the Canadair-briefing runs, while its
+three earlier completed missions show it can match the reference.
 
 **What is and is not established.** The reference, the baselines, the reward and its exploit
 tests are measured and reproducible with the command above. The five heuristics are *not* LLM
@@ -92,29 +112,29 @@ rebuilt by every `python run_eval.py`.
 | `test_drop(heading, altitude, speed, x, y)` | calibration drop: noisy impact point, fall time, smoke flag, wind measured at the aircraft's own altitude | 1 of 10 test drops |
 | `compare(hypothesis)` | for every test drop so far, predicted minus observed impact and fall time under the agent's hypothesis | 1 of 120 calculations |
 | `simulate(hypothesis, drop)` | predicted impact of any drop under the agent's hypothesis | 1 of 120 calculations |
-| `begin_operation` | ends calibration for good, reveals the five targets and their imposed run-in | free |
-| `drop(target, heading, altitude, speed, x, y)` | the real drop: one per target, no feedback | 1 per target |
+| `begin_operation` | ends calibration for good, reveals the five wildfire hotspots and their flight constraints | free |
+| `drop(target, heading, altitude, speed, x, y)` | the real water drop: one per hotspot, no feedback | 1 per hotspot |
 | `declare_done` | ends the mission | free |
 
 A hypothesis is six numbers: `drag`, `wind_speed`, `wind_dir`, `shear`, `veer`, `updraft`. The
 briefing states the full physics; those six numbers are the only thing hidden. `simulate` and
 `compare` never see the real air, they evaluate whatever hypothesis the agent passes.
 
-Each target imposes a heading, altitude and speed window ("run-in"), revealed only at
+Each hotspot imposes a heading, altitude and speed window, revealed only at
 `begin_operation`. So a test drop cannot simply be repeated on a target: the agent needs a
 model that holds at altitudes, speeds and headings it may not have tested, and through a smoke
 column of a different strength.
 
-**Score.** For each target, `max(0, 1 - d / 6 m)` where `d` is the distance from the true
-impact to the fire centre. A target that never receives a drop scores -0.5 (it keeps burning).
-The mission score is the mean over the five targets, floored at 0.
+**Score.** For each hotspot, `max(0, 1 - d / 6 m)` where `d` is the distance from the true
+impact to the fire centre. A hotspot that never receives a drop scores -0.5 (it keeps burning).
+The mission score is the mean over the five hotspots, floored at 0.
 
 ## Why this setting
 
-The same procedure exists in practice. Military and humanitarian airdrops compute a release
-point (CARP) from a wind profile measured by dropsondes released beforehand, and wind is the
-largest error term in that calculation ([AFMAN 11-231](https://static.e-publishing.af.mil/production/1/af_a3/publication/afman11-231/afman11-231.pdf),
-[Defense Update](https://defense-update.com/?p=20036)). For firefighting drops, the US Forest
+The setting is aerial wildfire suppression: a water load released by an air tanker is carried
+by the wind while it falls, and the release point has to account for the wind at different
+altitudes. The environment uses a Canadair-style firefighting aircraft and simplified fire
+hotspots to make that decision process concrete. For real firefighting drops, the US Forest
 Service measures ground patterns with cup-and-grid drop tests and reports that height, speed
 and wind all move and reshape the pattern ([USFS drop guides](https://www.fs.usda.gov/rm/fire/pubs/htmlpubs/htm00572868/intro.htm)),
 and a 2026 review lists the joint effect of fire plume, wind and drop height among the open

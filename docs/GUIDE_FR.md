@@ -10,33 +10,21 @@
 | Baselines « ne rien faire » et « arrêt précoce » | 0,00 et 0,03 |
 | Tests (23 tests, dont les tentatives de triche) | Tous passent |
 | Interface de résultats | `results/report.html` |
-| Run d'un modèle frontier | Claude Sonnet 5.5, 9 parties : 0,71 contre 0,88 pour la référence sur les mêmes seeds |
-| Refus des filtres de sécurité | Haiku 5.5 interrompu sur 6 parties sur 9, Sonnet 4.5 refuse dès le début : problème ouvert |
+| Sonnet 5.5, ancienne consigne | 9 parties : 0,708; sous la référence dans 8 cas sur 9 |
+| Sonnet 5.5, consigne Canadair | 9 parties : 0,730 contre 0,879; sous la référence dans les 9 cas |
+| Retest Canadair avec Sonnet 4.5 | 9 parties terminées : moyenne 0,315 contre 0,879 pour la référence, inférieur sur les 9 |
+| Retests Canadair avec Haiku 5.5 en high | 18 parties sur 18 interrompues par le filtre avant tout largage : résultat non comparable |
+| Refus des filtres de sécurité | Haiku 5.5 concerné; les deux Sonnet ont joué sous la consigne Canadair |
 | Emballage Harbor | Généré, jamais lancé sous Docker |
 | Entraînement d'un petit modèle | Seulement l'export des données |
 
 ## Ce qu'il reste à faire, dans l'ordre
 
-1. **Lancer un vrai modèle.** C'est le point qui manque pour le critère « gap ».
+1. **Vérifier l'emballage Harbor** sur une machine avec Docker :
 
    ```bash
-   cp .env.example .env
+   python harbor/make_tasks.py --seeds 3
    ```
-
-   Ouvrir `.env` et y mettre la clé. Pour Claude : `LLM_PROVIDER=anthropic`,
-   `ANTHROPIC_API_KEY=...`, `LLM_MODEL=claude-opus-5-5` (il faut aussi `pip install anthropic`).
-   Pour Gemini ou un autre : `LLM_PROVIDER=gemini`, `LLM_API_KEY=...`, `LLM_MODEL=...`.
-
-   ```bash
-   python run_llm.py --seeds 3 --runs 3
-   ```
-
-   ```bash
-   python run_eval.py
-   ```
-
-   Commencez par `--seeds 1 --runs 1` pour vérifier que l'API répond et voir le coût. Comptez
-   1,5 à 3 millions de tokens d'entrée par partie sans cache.
 
 2. **Lire les transcripts dans le rapport** et regarder la section « Where the points were
    lost ». Elle dit si le modèle perd ses points sur le choix des expériences, sur l'ajustement
@@ -49,13 +37,7 @@
    Relancer ensuite `python run_eval.py`, puis les runs du modèle : les anciens transcripts ne
    sont plus valables après un changement de configuration (le rejeu le signale).
 
-4. **Vérifier l'emballage Harbor** sur une machine avec Docker :
-
-   ```bash
-   python harbor/make_tasks.py --seeds 3
-   ```
-
-5. **Bonus** : exporter des parties de la référence (`python export_dataset.py`), affiner un
+4. **Bonus** : exporter des parties de la référence (`python export_dataset.py`), affiner un
    petit modèle, puis le mesurer avec `run_llm.py --base-url ...`.
 
 ## Voir les résultats
@@ -65,9 +47,9 @@ Ouvrir `results/report.html` dans un navigateur : c'est un fichier unique, sans 
 
 ## Trame de la démo (10 minutes)
 
-1. **Le problème (1 min).** Un largage d'eau tombe là où l'air l'emmène. Les militaires
-   calculent le point de largage à partir de sondes de vent ; c'est le même schéma. L'agent a
-   10 largages d'essai, puis 5 largages réels sans retour.
+1. **Le problème (1 min).** Un Canadair largue de l'eau sur un feu de forêt, et le vent déplace
+   la charge pendant sa chute. Le point de largage doit tenir compte du vent à plusieurs altitudes.
+   L'agent a 10 largages d'essai, puis 5 largages réels sans retour.
 2. **L'environnement (2 min).** Montrer le briefing en bas du rapport : toute la physique est
    écrite, seuls six nombres sont cachés. Montrer les sept outils.
 3. **La référence (2 min).** Ouvrir une partie de la référence dans le rapport : les 6 essais
@@ -78,7 +60,8 @@ Ouvrir `results/report.html` dans un navigateur : c'est un fichier unique, sans 
    perdus ».
 5. **L'intégrité de la récompense (1 min).** Le tableau des scores : ne rien faire 0, arrêt
    précoce 0,03, largage sans modèle 0. Citer les 23 tests.
-6. **Reproductibilité (1 min).** Lancer `python run_eval.py` en direct : 30 secondes.
+6. **Reproductibilité (1 min).** Lancer `python run_eval.py` en direct : environ 30 secondes
+   sans transcripts de modèles; leur rejeu complet prend plus longtemps.
 
 ## Trois phrases à garder en tête
 

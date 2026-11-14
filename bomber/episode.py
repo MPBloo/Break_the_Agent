@@ -51,7 +51,7 @@ TOOLS = [
     },
     {
         "name": "test_drop",
-        "description": "CALIBRATION PHASE. Release a small marker load and observe where it lands, how long it fell, and the wind measured by the aircraft at its own altitude. Costs one test drop.",
+        "description": "CALIBRATION PHASE. Release a small water marker and observe where it lands, how long it fell, and the wind measured by the aircraft at its own altitude. Costs one test drop.",
         "parameters": _schema(_DROP_PROPS),
     },
     {
@@ -66,27 +66,28 @@ TOOLS = [
     },
     {
         "name": "begin_operation",
-        "description": "End the calibration phase for good and reveal the five target fires with their imposed run-in constraints. Irreversible: no test drop is possible afterwards.",
+        "description": "End calibration for good and reveal the five wildfire hotspots with their imposed flight constraints. Irreversible: no test drop is possible afterwards.",
         "parameters": _schema({}),
     },
     {
         "name": "drop",
-        "description": "OPERATION PHASE. Release the real load on a target. One drop per target, no feedback on where it lands.",
-        "parameters": _schema({"target": {"type": "integer", "description": "Target id, 1 to 5."}, **_DROP_PROPS}),
+        "description": "FIRE-SUPPRESSION PHASE. Release the water load on a fire hotspot. One drop per hotspot, no feedback on where it lands.",
+        "parameters": _schema({"target": {"type": "integer", "description": "Wildfire hotspot id, 1 to 5."}, **_DROP_PROPS}),
     },
     {
         "name": "declare_done",
-        "description": "End the mission. Targets that received no drop count as untreated.",
+        "description": "End the mission. Hotspots that received no water drop count as untreated.",
         "parameters": _schema({}),
     },
 ]
 TOOL_NAMES = [t["name"] for t in TOOLS]
 
 INSTRUCTION = (
-    "You are the mission computer of a firefighting air tanker. Five spot fires must be hit with one "
-    "water drop each. Where a load lands depends on the air it falls through, and the air is not known "
+    "You are the flight-support computer for a Canadair-style aerial firefighting aircraft. Five "
+    "wildfire hotspots must each receive one water drop. Where the water load lands depends on the "
+    "air it falls through, and the air is not known "
     "in advance: you first calibrate with a limited number of test drops over a calibration fire, then "
-    "you commit to one real drop per target without seeing the result. You act only through the provided "
+    "you commit to one water drop per hotspot without seeing the result. You act only through the provided "
     "tools. Start by calling get_mission to read the full briefing, then carry out the mission and finish "
     "with declare_done."
 )
@@ -94,11 +95,11 @@ INSTRUCTION = (
 
 def briefing(cfg: Config) -> str:
     c = cfg
-    return f"""WATER BOMBER MISSION BRIEFING
+    return f"""CANADAIR FIRE-SUPPRESSION MISSION BRIEFING
 
 OBJECTIVE
-Extinguish {c.n_targets} spot fires. Each target receives exactly one real drop. You never see where a real
-drop lands, so you must first learn how a load falls through today's air.
+Help contain {c.n_targets} wildfire hotspots. Each hotspot receives exactly one water drop. You
+never see where a real drop lands, so you must first learn how a water load falls through today's air.
 
 COORDINATES AND UNITS
 Flat ground at z = 0. x points east, y points north, in metres. All directions are compass degrees of
@@ -144,17 +145,17 @@ You have {c.n_calculations} calculations in total for the whole mission, shared 
 Neither tool knows the real air. They only evaluate the hypothesis you give them.
 
 PHASE 2: OPERATION
-`begin_operation` ends calibration irreversibly and reveals the {c.n_targets} targets. Each target is a fire with
+`begin_operation` ends calibration irreversibly and reveals the {c.n_targets} wildfire hotspots. Each hotspot is a fire with
 its own position and intensity (between {c.target_intensity[0]} and {c.target_intensity[1]}), hence its own smoke column. For safety each
-target imposes a run-in heading range, an altitude range and a speed range, which can lie anywhere in
-the flight envelope; a drop outside these ranges is refused. Targets are far from the calibration
-fire. Use `drop` once per target. A real drop returns no information about where it landed.
+hotspot imposes a flight heading range, an altitude range and a speed range, which can lie anywhere in
+the flight envelope; a drop outside these ranges is refused. The hotspots are far from the calibration
+fire. Use `drop` once per hotspot. A real drop returns no information about where it landed.
 
 SCORING
-For each target, d is the distance between the true impact point and the fire centre:
-  target score = max(0, 1 - d / {c.score_radius:g}).
-A target that never receives a drop keeps burning and scores {c.untreated_score}.
-Mission score = max(0, mean of the {c.n_targets} target scores). Call `declare_done` when finished.
+For each hotspot, d is the distance between the true impact point and the fire centre:
+  hotspot score = max(0, 1 - d / {c.score_radius:g}).
+A hotspot that never receives a drop keeps burning and scores {c.untreated_score}.
+Mission score = max(0, mean of the {c.n_targets} hotspot scores). Call `declare_done` when finished.
 """
 
 

@@ -3,8 +3,8 @@
 ## 1. What the agent is supposed to learn
 
 One sentence: **design experiments that separate competing explanations, fit a model under a
-calculation budget, then commit.** The setting is a firefighting air tanker because the real
-procedure has exactly this shape (wind sounding, release-point computation, one pass).
+calculation budget, then commit.** The setting is a Canadair-style firefighting air tanker because
+water drops over wildfires require a wind profile, release-point computation, and a single pass.
 
 ## 2. The world
 
@@ -124,15 +124,18 @@ If it scores near zero, loosen the same two.
 
 ## 7. What is not done
 
-- Two frontier models have been run at the 6 m radius, nine missions each on seeds 1 to 3. Claude
-  Sonnet 5.5 scores 0.71 against 0.88 for the reference and is below it in 8 of 9 missions. Claude
-  Haiku 5.5 was stopped by the provider's safety filter in 6 of 9 missions; its three completed
-  missions average 0.81, two of them above the reference. The gap is therefore not robust yet.
-- Safety-filter refusals are an open problem of the framing. Claude Sonnet 4.5 refuses the first
-  request every time (category "bio"), Haiku 5.5 refuses mid-mission in most runs. Computing an
-  aerial release point under wind reads like dispersion modelling to these filters. Nothing was
-  done to work around them. A setting with the same structure and no aerial release (the patient
-  dosing or search-and-rescue variants considered earlier) would avoid the issue.
+- Frontier-model results at the 6 m radius: under the current Canadair briefing, Sonnet 5.5
+  averaged 0.730 against the reference's 0.879 and was below it in all 9 missions. Its loss
+  attribution is 0.142 fitting, 0.037 experiments, and -0.031 aiming. Sonnet 4.5 averaged 0.315
+  against 0.879 and was below the reference in all 9 runs. These are small samples across 3 seeds.
+- The earlier Sonnet 5.5 run used previous wording: mean 0.708, below the reference in 8 of 9.
+- Under the previous mission wording, Sonnet 4.5 refused the first request every time (category
+  "bio"). It completed all nine Canadair-briefing runs. The API logs do not expose why the result
+  changed; the prompt presents the wildfire-suppression task directly.
+- Haiku 5.5 was stopped by the provider's safety filter in 6 of 9 earlier missions; its three
+  completed missions average 0.81, two above the reference. With the current Canadair briefing,
+  all 18 runs across two high-effort batches were stopped before any real water drop, so they do
+  not measure play quality.
 - No small model has been trained. `export_dataset.py` writes reference missions as
   tool-calling transcripts; training and before/after evaluation remain to be done.
 - The Harbor packaging has not been run under Docker.

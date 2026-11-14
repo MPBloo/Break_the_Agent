@@ -1,4 +1,4 @@
-# Water Bomber: evaluation summary
+# Canadair Firefighting: archived evaluation summary
 
 Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are deterministic.
 

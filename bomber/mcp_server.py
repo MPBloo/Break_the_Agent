@@ -1,4 +1,4 @@
-"""MCP server: exposes one Water Bomber mission (one Episode) as MCP tools.
+"""MCP server: exposes one Canadair firefighting mission (one Episode) as MCP tools.
 
     python -m bomber.mcp_server                      # stdio transport (default)
     python -m bomber.mcp_server --transport http     # streamable HTTP on :8000/mcp
@@ -41,7 +41,7 @@ TargetId = Annotated[int, Field(description="Target id, 1 to 5.")]
 
 
 def build_server(episode: Episode, result_path: str | None = None) -> FastMCP:
-    mcp = FastMCP("water-bomber", instructions=INSTRUCTION)
+    mcp = FastMCP("canadair-firefighting", instructions=INSTRUCTION)
 
     def call(name: str, **args) -> dict:
         out = episode.call_tool(name, args)

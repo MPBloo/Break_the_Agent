@@ -138,7 +138,7 @@ def main() -> int:
     with open(os.path.join(a.out, "summary.json"), "w") as f:
         json.dump(summary, f, indent=1)
 
-    lines = ["# Water Bomber: evaluation summary", "",
+    lines = ["# Canadair Firefighting: evaluation summary", "",
              f"Seeds {seeds[0]}..{seeds[-1]}. Scores are mission scores in [0, 1]. Scripted agents are deterministic.", "",
              "| Agent | Kind | Episodes | Mean | Std | Min | Max | Lost: experiments | Lost: fitting | Lost: aiming |",
              "|---|---|---|---|---|---|---|---|---|---|"]

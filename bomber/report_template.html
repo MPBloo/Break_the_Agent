@@ -1,4 +1,4 @@
-<title>Water Bomber Debrief</title>
+<title>Canadair Firefighting Debrief</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
@@ -150,8 +150,8 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
 <div class="wrap">
   <header class="head">
     <div class="eyebrow">Mission debrief</div>
-    <h1>Water Bomber</h1>
-    <p class="lede">An agent has ten test drops to learn how a load falls through today's air: drag, a wind that strengthens and turns with altitude, and the updraft above a fire. It then commits to one blind drop on each of five fires. The mission score is the mean hit quality over the five targets, from 0 to 1.</p>
+    <h1>Canadair Firefighting</h1>
+    <p class="lede">An agent has ten test drops to learn how a water load falls through today's air: drag, a wind that strengthens and turns with altitude, and the updraft above a wildfire. It then commits to one blind water drop on each of five hotspots. The mission score is the mean hit quality over the five hotspots, from 0 to 1.</p>
     <div class="chips" id="chips"></div>
   </header>
 
@@ -202,7 +202,7 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
       <div class="side">
         <div class="tiles" id="tiles"></div>
         <div class="block">
-          <h3>Targets</h3>
+          <h3>Fire hotspots</h3>
           <div class="scroll-x"><table id="targets"></table></div>
         </div>
       </div>
@@ -293,7 +293,7 @@ const DATA = /*__REPORT_DATA__*/null;
   // ----------------------------------------------------------------- header
   const seeds = DATA.meta.seeds;
   [`Seeds ${seeds[0]} to ${seeds[seeds.length - 1]}`, `${CFG.n_test_drops} test drops`, `${CFG.n_calculations} calculations`,
-   `${CFG.n_targets} targets`, `Scoring radius ${CFG.score_radius} m`, `Generated ${DATA.meta.generated}`]
+   `${CFG.n_targets} hotspots`, `Scoring radius ${CFG.score_radius} m`, `Generated ${DATA.meta.generated}`]
     .forEach((t) => $("chips").appendChild(el("span", { cls: "chip", text: t })));
   $("brief").textContent = DATA.briefing;
 
@@ -425,7 +425,7 @@ const DATA = /*__REPORT_DATA__*/null;
   function renderFocusButtons() {
     const seg = $("seg-focus");
     seg.replaceChildren();
-    const opts = [["cal", "Calibration"]].concat(state.ep.targets.map((t) => ["t" + t.id, "Target " + t.id])).concat([["map", "Whole map"]]);
+    const opts = [["cal", "Calibration"]].concat(state.ep.targets.map((t) => ["t" + t.id, "Hotspot " + t.id])).concat([["map", "Whole map"]]);
     opts.forEach(([id, label]) => {
       const b = el("button", { type: "button", "aria-pressed": String(state.focus === id), text: label });
       b.addEventListener("click", () => { state.focus = id; state.zoom = 1; renderFocusButtons(); renderTargets(); draw(); });
@@ -460,12 +460,12 @@ const DATA = /*__REPORT_DATA__*/null;
   function renderTargets() {
     const ep = state.ep, t = $("targets");
     t.replaceChildren();
-    t.appendChild(el("tr", {}, [["Target", ""], ["Intensity", "num"], ["Imposed run-in", ""], ["Miss", "num"], ["Score", "num"]].map(([h, c]) => el("th", { cls: c, text: h }))));
+    t.appendChild(el("tr", {}, [["Hotspot", ""], ["Intensity", "num"], ["Imposed flight path", ""], ["Miss", "num"], ["Score", "num"]].map(([h, c]) => el("th", { cls: c, text: h }))));
     ep.targets.forEach((tg) => {
       const s = ep.scored.find((x) => x.id === tg.id);
       const run = `${tg.heading_range[0]}–${tg.heading_range[1]}° · ${tg.altitude_range[0]}–${tg.altitude_range[1]} m · ${tg.speed_range[0]}–${tg.speed_range[1]} m/s`;
       const tr = el("tr", { cls: "pick", tabindex: "0", "aria-selected": String(state.focus === "t" + tg.id) }, [
-        el("td", { text: "Target " + tg.id }), el("td", { cls: "num", text: tg.intensity.toFixed(2) }), el("td", { text: run }),
+        el("td", { text: "Hotspot " + tg.id }), el("td", { cls: "num", text: tg.intensity.toFixed(2) }), el("td", { text: run }),
         el("td", { cls: "num", text: s.treated ? f1(s.distance) + " m" : "no drop" }),
         el("td", { cls: "num" }, [s.treated ? pill(s.score) : el("span", { cls: "err", text: String(s.score) })])]);
       const go = () => { state.focus = "t" + tg.id; state.zoom = 1; renderFocusButtons(); renderTargets(); draw(); };
@@ -578,7 +578,7 @@ const DATA = /*__REPORT_DATA__*/null;
     if (tool === "compare") return hypText(a);
     if (tool === "simulate") return dropText(a) + " | " + hypText(a);
     if (tool === "test_drop") return dropText(a);
-    if (tool === "drop") return `target ${a.target} · ` + dropText(a);
+    if (tool === "drop") return `hotspot ${a.target} · ` + dropText(a);
     const keys = Object.keys(a || {});
     return keys.length ? JSON.stringify(a).slice(0, 200) : "";
   }

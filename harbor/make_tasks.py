@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate self-contained Harbor tasks, one per seed.
 
-    python harbor/make_tasks.py --seeds 5          # writes harbor/tasks/water-bomber-seed-1 ... -5
-    harbor run -p harbor/tasks/water-bomber-seed-1 -a oracle       # the reference solution
-    harbor run -p harbor/tasks/water-bomber-seed-1 -a opencode -m <model>
+    python harbor/make_tasks.py --seeds 5          # writes harbor/tasks/canadair-firefighting-seed-1 ... -5
+    harbor run -p harbor/tasks/canadair-firefighting-seed-1 -a oracle       # the reference solution
+    harbor run -p harbor/tasks/canadair-firefighting-seed-1 -a opencode -m <model>
 
 Layout follows Harbor's official multi-container MCP example (examples/tasks/hello-mcp):
 the agent runs in `main`, the mission lives in a separate `mcp-server` container that the agent
@@ -27,8 +27,8 @@ from bomber.episode import INSTRUCTION  # noqa: E402
 TASK_TOML = '''schema_version = "1.1"
 
 [task]
-name = "junction/water-bomber-seed-{seed}"
-description = "Calibrate an unknown atmosphere with ten test drops, then hit five fires blind."
+name = "junction/canadair-firefighting-seed-{seed}"
+description = "Calibrate an unknown atmosphere with ten test drops, then deliver water to five wildfire hotspots."
 authors = []
 keywords = ["experiment-design", "system-identification", "mcp"]
 
@@ -48,7 +48,7 @@ memory_mb = 2048
 storage_mb = 10240
 gpus = 0
 [[environment.mcp_servers]]
-name = "water-bomber"
+name = "canadair-firefighting"
 transport = "streamable-http"
 url = "http://mcp-server:8000/mcp"
 args = []
@@ -60,11 +60,11 @@ args = []
 [solution.env]
 '''
 
-INSTRUCTION_MD = '''# Water Bomber
+INSTRUCTION_MD = '''# Canadair Firefighting
 
 {instruction}
 
-The mission tools are served by the MCP server `water-bomber` at `http://mcp-server:8000/mcp`:
+The mission tools are served by the MCP server `canadair-firefighting` at `http://mcp-server:8000/mcp`:
 `get_mission`, `test_drop`, `compare`, `simulate`, `begin_operation`, `drop`, `declare_done`.
 Everything you need to know is in the briefing returned by `get_mission`.
 '''
@@ -159,7 +159,7 @@ def main() -> None:
     ap.add_argument("--out", default=os.path.join(ROOT, "harbor", "tasks"))
     a = ap.parse_args()
     for seed in range(1, a.seeds + 1):
-        d = os.path.join(a.out, f"water-bomber-seed-{seed}")
+        d = os.path.join(a.out, f"canadair-firefighting-seed-{seed}")
         shutil.rmtree(d, ignore_errors=True)
         write(os.path.join(d, "task.toml"), TASK_TOML.format(seed=seed))
         write(os.path.join(d, "instruction.md"), INSTRUCTION_MD.format(instruction=INSTRUCTION))
