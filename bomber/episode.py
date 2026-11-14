@@ -160,11 +160,11 @@ Mission score = max(0, mean of the {c.n_targets} hotspot scores). Call `declare_
 
 
 class Episode:
-    def __init__(self, seed: int, cfg: Config = DEFAULT):
+    def __init__(self, seed: int, cfg: Config = DEFAULT, salt: str = ""):
         self.seed = int(seed)
         self.cfg = cfg
-        self._world = make_world(self.seed, cfg)
-        self._obs_rng = random.Random(f"water-bomber-obs-{self.seed}")
+        self._world = make_world(self.seed, cfg, salt)
+        self._obs_rng = random.Random(f"water-bomber-obs-{salt}{self.seed}")
         self.phase = "calibration"
         self.tests: list[dict] = []
         self.drops: dict[int, dict] = {}

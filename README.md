@@ -188,6 +188,7 @@ six numbers scores above 0.97, so nothing outside those six numbers is hidden.
 | Use real drops as experiments | impossible: `drop` returns no impact information, one drop per target |
 | Read the score mid-mission | `declare_done` and the verifier's `/score` endpoint both end the mission first |
 | NaN, infinities, strings, booleans, out-of-range values, unknown arguments, bad target ids | refused, nothing charged, no state change |
+| Rebuild the hidden air from the public code by guessing the seed from the revealed hotspots (an agent with a shell finds it in 0.2 s) | defeated by a secret salt the Harbor tasks pass to the mission server (`BOMBER_SALT`); the agent's container cannot read it |
 | Look for the hidden numbers in tool outputs and error messages | not present; `simulate` returns identical answers on worlds with different hidden air |
 | Keep calling after the budget or after the end | refused |
 

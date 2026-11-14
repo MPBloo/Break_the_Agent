@@ -200,12 +200,7 @@
      "score": 0.0
     }
    ],
-   "refused": 9,
-   "lost": {
-    "lost_experiments": 0.6705,
-    "lost_fitting": 0.1816,
-    "lost_aiming": 0.0266
-   }
+   "refused": 9
   },
   {
    "id": "claude-sonnet-5-5",
@@ -454,9 +449,9 @@
    ],
    "refused": 6,
    "lost": {
-    "lost_experiments": 0.1667,
-    "lost_fitting": 0.1738,
-    "lost_aiming": 0.2681
+    "lost_experiments": 0.0634,
+    "lost_fitting": 0.1165,
+    "lost_aiming": -0.1238
    }
   },
   {
@@ -515,12 +510,7 @@
      "score": 0.0
     }
    ],
-   "refused": 9,
-   "lost": {
-    "lost_experiments": 0.6487,
-    "lost_fitting": 0.1882,
-    "lost_aiming": 0.0418
-   }
+   "refused": 9
   },
   {
    "id": "quick_fit",

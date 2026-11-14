@@ -6,6 +6,9 @@
 
 Environment variables:
     BOMBER_SEED     world seed of the mission (default 1)
+    BOMBER_SALT     secret mixed into world generation (default empty). Set it whenever the agent
+                    can run code and read this public repository, or the hidden air can be rebuilt
+                    from the seed. harbor/make_tasks.py sets a random one.
     BOMBER_RESULT   if set, the full episode record (score, log, hidden truth) is written to this
                     path after every tool call. This file is for the harness / verifier. It must
                     live where the agent cannot read it.
@@ -123,7 +126,7 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--seed", type=int, default=int(os.environ.get("BOMBER_SEED", "1")))
     a = ap.parse_args()
-    mcp = build_server(Episode(a.seed), os.environ.get("BOMBER_RESULT"))
+    mcp = build_server(Episode(a.seed, salt=os.environ.get("BOMBER_SALT", "")), os.environ.get("BOMBER_RESULT"))
     if a.transport == "stdio":
         mcp.run(transport="stdio")
     else:

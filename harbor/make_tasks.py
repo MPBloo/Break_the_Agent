@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import secrets
 import shutil
 import sys
 
@@ -88,6 +89,7 @@ services:
       context: ./mcp-server
     environment:
       BOMBER_SEED: "{seed}"
+      BOMBER_SALT: "{salt}"
     expose:
       - "8000"
     healthcheck:
@@ -157,14 +159,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seeds", type=int, default=3, help="generate tasks for seeds 1..N")
     ap.add_argument("--out", default=os.path.join(ROOT, "harbor", "tasks"))
+    ap.add_argument("--salt", default=None,
+                    help="secret mixed into world generation; default: a fresh random value. The agent's "
+                         "container cannot read it, so it cannot rebuild the hidden air from the public code.")
     a = ap.parse_args()
+    salt = a.salt if a.salt is not None else secrets.token_hex(16)
     for seed in range(1, a.seeds + 1):
         d = os.path.join(a.out, f"canadair-firefighting-seed-{seed}")
         shutil.rmtree(d, ignore_errors=True)
         write(os.path.join(d, "task.toml"), TASK_TOML.format(seed=seed))
         write(os.path.join(d, "instruction.md"), INSTRUCTION_MD.format(instruction=INSTRUCTION))
         write(os.path.join(d, "environment", "Dockerfile"), MAIN_DOCKERFILE)
-        write(os.path.join(d, "environment", "docker-compose.yaml"), COMPOSE.format(seed=seed))
+        write(os.path.join(d, "environment", "docker-compose.yaml"), COMPOSE.format(seed=seed, salt=salt))
         write(os.path.join(d, "environment", "mcp-server", "Dockerfile"), SERVER_DOCKERFILE)
         shutil.copytree(os.path.join(ROOT, "bomber"), os.path.join(d, "environment", "mcp-server", "bomber"),
                         ignore=shutil.ignore_patterns("__pycache__", "analysis.py", "report*", "runner.py"))

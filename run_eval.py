@@ -106,7 +106,10 @@ def main() -> int:
           f"{len(llm) - bad} reproduce their stored score on replay" + (f", {bad} DO NOT" if bad else "") + ".")
 
     print("[4/5] Attributing lost points ...", flush=True)
-    todo = [r for r in records if AGENTS[r["agent"]]["group"] == "heuristic"] + llm
+    # A mission cut short by the provider's safety filter says nothing about how the model plays:
+    # attributing its zero to "experiments" or "fitting" would be misleading, so it is left out.
+    played = [r for r in llm if (r.get("agent_extra") or {}).get("stopped") != "refusal"]
+    todo = [r for r in records if AGENTS[r["agent"]]["group"] == "heuristic"] + played
     with Pool(a.workers) as pool:
         for rec, att in zip(todo, pool.map(_attribute, [(r, ref_by_seed[r["seed"]]) for r in todo])):
             rec["attribution"] = att

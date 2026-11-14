@@ -38,8 +38,12 @@ class World:
     targets: tuple
 
 
-def make_world(seed: int, cfg: Config) -> World:
-    rng = random.Random(f"water-bomber-world-{seed}")
+def make_world(seed: int, cfg: Config, salt: str = "") -> World:
+    """`salt` is a server-side secret. With an empty salt the world depends on the seed alone, which
+    keeps published results reproducible from the public code. A deployment where the agent has a
+    shell and can read this repository must set a secret salt (BOMBER_SALT), otherwise the seed can
+    be recovered from the revealed hotspots and the hidden air rebuilt exactly."""
+    rng = random.Random(f"water-bomber-world-{salt}{seed}")
     u = rng.uniform
     air = Air(
         drag=round(u(*cfg.true_drag), 5),

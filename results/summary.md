@@ -5,12 +5,12 @@ Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are determinis
 | Agent | Kind | Episodes | Mean | Std | Min | Max | Lost: experiments | Lost: fitting | Lost: aiming |
 |---|---|---|---|---|---|---|---|---|---|
 | Reference solution | reference | 10 | 0.824 | 0.056 | 0.714 | 0.915 |  |  |  |
-| haiku-high-nouvel-essai | frontier | 9 | 0.000 | 0.000 | 0.000 | 0.000 | 0.67 | 0.18 | 0.03 |
+| haiku-high-nouvel-essai | frontier | 9 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 | claude-sonnet-5-5 | frontier | 9 | 0.708 | 0.072 | 0.618 | 0.859 | 0.09 | 0.16 | -0.08 |
 | claude-sonnet-5-5-canadair-2026-11-14 | frontier | 9 | 0.730 | 0.075 | 0.616 | 0.842 | 0.04 | 0.14 | -0.03 |
 | claude-sonnet-4-5-20250929-canadair-2026-11-14 | frontier | 9 | 0.315 | 0.194 | 0.000 | 0.604 | 0.10 | 0.38 | 0.09 |
-| claude-haiku-5-5 | frontier | 9 | 0.270 | 0.389 | 0.000 | 0.942 | 0.17 | 0.17 | 0.27 |
-| claude-haiku-5-5-canadair-2026-11-14 | frontier | 9 | 0.000 | 0.000 | 0.000 | 0.000 | 0.65 | 0.19 | 0.04 |
+| claude-haiku-5-5 | frontier | 9 | 0.270 | 0.389 | 0.000 | 0.942 | 0.06 | 0.12 | -0.12 |
+| claude-haiku-5-5-canadair-2026-11-14 | frontier | 9 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 | Stops fitting early | heuristic | 10 | 0.599 | 0.308 | 0.000 | 0.887 | -0.01 | 0.24 | -0.00 |
 | One flight condition | heuristic | 10 | 0.388 | 0.222 | 0.057 | 0.757 | 0.44 | -0.01 | -0.00 |
 | Assumes uniform wind | heuristic | 10 | 0.367 | 0.168 | 0.044 | 0.669 | 0.37 | 0.09 | -0.00 |
