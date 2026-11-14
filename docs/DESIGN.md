@@ -54,9 +54,10 @@ judging criteria ask whether the reward reflects real progress.
 | 3 | Wind veer added (sixth unknown), wider wind range | 0.86, min 0.41 | 0.47 to 0.78 | Good separation, but the reference itself fails on some seeds. |
 | 4 | Updraft range capped so the strongest column stays below 60 % of the load's terminal speed | 0.93 | 0.61 to 0.86 | Chaotic "hovering" regime removed. |
 | 5 | Hypothesis bounds widened and off-centre; scoring radius 10 m | 0.87, min 0.62 | 0.13 to 0.60 | Mid-range guessing no longer works. |
-| 6 | Reference aiming changed from "shift by the miss" to a secant update | **0.89, min 0.80 on 60 seeds** | 0.13 to 0.68 | Current. |
+| 6 | Reference aiming changed from "shift by the miss" to a secant update | 0.89, min 0.80 on 60 seeds | 0.13 to 0.68 | Claude Sonnet 5.5 then scored 0.80 against 0.93 on the same seeds: too forgiving. |
+| 7 | Scoring radius 10 m to 6 m | **0.82, min 0.67 on 60 seeds** | 0.04 to 0.60 | Current. Sonnet 5.5: 0.71 against 0.88 on the same seeds. |
 
-Versions 1 to 4 were scored with the 20 m radius, versions 5 and 6 with 10 m. Versions 1 to 5
+Versions 1 to 4 were scored with the 20 m radius, versions 5 and 6 with 10 m, version 7 with 6 m. Versions 1 to 5
 are on 20 or 30 seeds; the degraded-strategy range of version 6 is on the ten default seeds.
 
 Two findings worth stating:
@@ -110,7 +111,7 @@ All in `bomber/config.py`. In order of how gently they act:
 
 | Knob | Default | Effect |
 |---|---|---|
-| `score_radius` | 10 m | Smaller: every metre of model error costs more. |
+| `score_radius` | 6 m | Smaller: every metre of model error costs more, for the reference too (its misses are 1 to 2 m). |
 | `n_calculations` | 120 | The reference needs about 95. Lower values force a more economical search. |
 | `n_test_drops` | 10 | The reference uses all ten (six in clear air, four through smoke). |
 | noise levels | 1.5 m, 0.05 s | Higher: averaging and replication start to matter. |
@@ -123,11 +124,15 @@ If it scores near zero, loosen the same two.
 
 ## 7. What is not done
 
-- One frontier model has been run (Claude Sonnet 5.5, nine missions on seeds 1 to 3): 0.80
-  against 0.93 for the reference on the same seeds, below it in 7 of 9 missions. The sample is
-  small and the gap is modest at the default 10 m scoring radius. Re-scoring the same drops with a
-  5 m radius gives 0.64 against 0.86, at the price of a lower and less stable reference (0.79 on
-  ten seeds, minimum 0.66).
+- Two frontier models have been run at the 6 m radius, nine missions each on seeds 1 to 3. Claude
+  Sonnet 5.5 scores 0.71 against 0.88 for the reference and is below it in 8 of 9 missions. Claude
+  Haiku 5.5 was stopped by the provider's safety filter in 6 of 9 missions; its three completed
+  missions average 0.81, two of them above the reference. The gap is therefore not robust yet.
+- Safety-filter refusals are an open problem of the framing. Claude Sonnet 4.5 refuses the first
+  request every time (category "bio"), Haiku 5.5 refuses mid-mission in most runs. Computing an
+  aerial release point under wind reads like dispersion modelling to these filters. Nothing was
+  done to work around them. A setting with the same structure and no aerial release (the patient
+  dosing or search-and-rescue variants considered earlier) would avoid the issue.
 - No small model has been trained. `export_dataset.py` writes reference missions as
   tool-calling transcripts; training and before/after evaluation remain to be done.
 - The Harbor packaging has not been run under Docker.

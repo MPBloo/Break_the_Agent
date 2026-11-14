@@ -318,7 +318,8 @@ const DATA = /*__REPORT_DATA__*/null;
     plot.appendChild(el("span", { cls: "val", style: `left:${a.mean * 100}%`, text: f2(a.mean) }));
     a.episodes.forEach((i) => plot.appendChild(el("i", { cls: "dot", style: `left:${DATA.episodes[i].score * 100}%;background:${barColor(a.group)}` })));
     const row = el("div", { cls: "row", tabindex: "0" }, [
-      el("div", { cls: "row-label" }, [el("span", { cls: "name", text: a.label }), el("span", { cls: "kind", text: GROUP[a.group] })]), plot]);
+      el("div", { cls: "row-label" }, [el("span", { cls: "name", text: a.label }),
+        el("span", { cls: "kind", text: GROUP[a.group] + (a.refused ? ` · ${a.refused} of ${a.n} cut short by a safety refusal` : "") })]), plot]);
     bindTip(row, (t) => {
       t.appendChild(el("div", {}, [el("b", { text: f2(a.mean) }), " mean over " + a.n + " episode" + (a.n > 1 ? "s" : "")]));
       t.appendChild(el("div", { cls: "d", text: `min ${f2(a.min)} · max ${f2(a.max)} · std ${f2(a.std)}` }));
@@ -415,6 +416,7 @@ const DATA = /*__REPORT_DATA__*/null;
     const b = $("ep-banner");
     const msgs = [];
     if (ep.error) msgs.push("The agent stopped on an error: " + ep.error);
+    if (ep.stopped === "refusal") msgs.push("The model provider's safety filter ended this mission before it finished. The score reflects the interruption, not the model's play.");
     if (ep.replay_ok === false) msgs.push("Replaying this transcript does not reproduce its stored score.");
     b.hidden = !msgs.length;
     b.textContent = msgs.join(" ");

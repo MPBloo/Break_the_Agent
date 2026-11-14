@@ -129,6 +129,7 @@ def main() -> int:
         sc = [r["score"] for r in g["episodes"]]
         row = {"id": g["id"], "label": g["label"], "group": g["group"], **_stats(sc),
                "scores": [{"seed": r["seed"], "run": r["run"], "score": r["score"]} for r in g["episodes"]]}
+        row["refused"] = sum(1 for r in g["episodes"] if (r.get("agent_extra") or {}).get("stopped") == "refusal")
         atts = [r["attribution"] for r in g["episodes"] if r.get("attribution")]
         if atts:
             row["lost"] = {k: round(st.mean(x[k] for x in atts), 4)
@@ -148,6 +149,14 @@ def main() -> int:
                      f"{r['min']:.3f} | {r['max']:.3f} | " + " | ".join(cells) + " |")
     lines += ["", "\"Lost\" columns: mean points lost against the reference on the same seeds, split by cause "
               "(see bomber/analysis.py).", ""]
+    for r in summary["agents"]:
+        if r["refused"]:
+            done = [x["score"] for x, e in zip(r["scores"], next(g for g in groups if g["id"] == r["id"])["episodes"])
+                    if (e.get("agent_extra") or {}).get("stopped") != "refusal"]
+            lines += [f"{r['label']}: {r['refused']} of {r['n']} missions were cut short by the model provider's safety "
+                      f"filter before any real drop and score 0. Mean over the {len(done)} completed missions: "
+                      f"{st.mean(done):.3f}." if done else
+                      f"{r['label']}: all {r['n']} missions were cut short by the model provider's safety filter.", ""]
     with open(os.path.join(a.out, "summary.md"), "w") as f:
         f.write("\n".join(lines))
 

@@ -6,11 +6,12 @@
 |---|---|
 | Environnement (physique, monde seedé, 7 outils, score) | Fait et testé |
 | Serveur MCP (stdio et HTTP) | Fait, vérifié identique à l'exécution directe |
-| Solution de référence | 0,89 de moyenne sur 10 seeds, jamais sous 0,80 sur 60 seeds |
-| Baselines « ne rien faire » et « arrêt précoce » | 0,00 et 0,06 |
+| Solution de référence | 0,82 de moyenne sur 10 seeds (rayon de score 6 m), minimum 0,67 sur 60 seeds |
+| Baselines « ne rien faire » et « arrêt précoce » | 0,00 et 0,03 |
 | Tests (23 tests, dont les tentatives de triche) | Tous passent |
 | Interface de résultats | `results/report.html` |
-| Run d'un modèle frontier | Claude Sonnet 5.5, 9 parties : 0,80 contre 0,93 pour la référence sur les mêmes seeds |
+| Run d'un modèle frontier | Claude Sonnet 5.5, 9 parties : 0,71 contre 0,88 pour la référence sur les mêmes seeds |
+| Refus des filtres de sécurité | Haiku 5.5 interrompu sur 6 parties sur 9, Sonnet 4.5 refuse dès le début : problème ouvert |
 | Emballage Harbor | Généré, jamais lancé sous Docker |
 | Entraînement d'un petit modèle | Seulement l'export des données |
 
@@ -42,9 +43,8 @@
    ou sur la visée.
 
 3. **Recalibrer si besoin**, dans `bomber/config.py` :
-   - le modèle est trop proche de la référence : baisser `score_radius` (10 vers 6) et
-     `n_calculations` (120 vers 100) ;
-   - le modèle est à zéro partout : monter `score_radius` (10 vers 15).
+   - le modèle est trop proche de la référence : baisser `score_radius` (6 vers 5) ;
+   - le modèle est à zéro partout : monter `score_radius` (6 vers 10).
 
    Relancer ensuite `python run_eval.py`, puis les runs du modèle : les anciens transcripts ne
    sont plus valables après un changement de configuration (le rejeu le signale).
@@ -77,7 +77,7 @@ Ouvrir `results/report.html` dans un navigateur : c'est un fichier unique, sans 
    tableau « vérité contre hypothèse », la rose des vents, puis la barre « où les points sont
    perdus ».
 5. **L'intégrité de la récompense (1 min).** Le tableau des scores : ne rien faire 0, arrêt
-   précoce 0,06, largage sans modèle 0. Citer les 23 tests.
+   précoce 0,03, largage sans modèle 0. Citer les 23 tests.
 6. **Reproductibilité (1 min).** Lancer `python run_eval.py` en direct : 30 secondes.
 
 ## Trois phrases à garder en tête

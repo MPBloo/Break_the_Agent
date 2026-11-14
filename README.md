@@ -21,37 +21,49 @@ needs only Python 3.10+. `pip install -r requirements.txt` adds the MCP server c
 
 ## Results
 
-Ten seeds, default configuration. Scripted agents are deterministic: same seed, same score.
+Ten seeds, default configuration (6 m scoring radius). Scripted agents are deterministic: same
+seed, same score.
 
 | Agent | What it is | Mean | Min | Max |
 |---|---|---|---|---|
-| **Reference solution** | same tools, same budgets, better method | **0.89** | 0.83 | 0.95 |
-| Claude Sonnet 5.5 | frontier model, tool loop, no shell; 9 missions on seeds 1 to 3 | 0.80 | 0.45 | 0.92 |
-| Stops fitting early | reference experiments, one coarse fitting pass | 0.68 | 0.00 | 0.93 |
-| Assumes uniform wind | varied tests at one altitude, no shear, no veer | 0.56 | 0.17 | 0.80 |
-| One flight condition | ten tests at the same heading, altitude, speed | 0.55 | 0.19 | 0.85 |
-| Ignores the smoke column | careful clear-air tests, updraft left at zero | 0.36 | 0.10 | 0.54 |
-| Trusts priors | one test drop, mid-range guesses, no fitting | 0.13 | 0.00 | 0.46 |
-| Stop early | plays like the reference, stops after 2 of 5 targets | 0.06 | 0.03 | 0.08 |
+| **Reference solution** | same tools, same budgets, better method | **0.82** | 0.71 | 0.91 |
+| Claude Sonnet 5.5 | frontier model, tool loop, no shell; 9 missions on seeds 1 to 3 | 0.71 | 0.62 | 0.86 |
+| Claude Haiku 5.5, completed missions | 3 of 9 missions on seeds 1 to 3 (see below) | 0.81 | 0.64 | 0.94 |
+| Stops fitting early | reference experiments, one coarse fitting pass | 0.60 | 0.00 | 0.89 |
+| One flight condition | ten tests at the same heading, altitude, speed | 0.39 | 0.06 | 0.76 |
+| Assumes uniform wind | varied tests at one altitude, no shear, no veer | 0.37 | 0.04 | 0.67 |
+| Ignores the smoke column | careful clear-air tests, updraft left at zero | 0.21 | 0.00 | 0.41 |
+| Trusts priors | one test drop, mid-range guesses, no fitting | 0.04 | 0.00 | 0.22 |
+| Stop early | plays like the reference, stops after 2 of 5 targets | 0.03 | 0.00 | 0.07 |
 | Calibrate, never drop | | 0.00 | 0.00 | 0.00 |
 | Release overhead (no model) | | 0.00 | 0.00 | 0.00 |
 | Random actions | | 0.00 | 0.00 | 0.00 |
 | Do nothing | | 0.00 | 0.00 | 0.00 |
 
-On 60 seeds the reference averages 0.895 and never falls below 0.80.
+On 60 seeds the reference averages 0.825, with a minimum of 0.67.
 
-On the three seeds Sonnet played, the reference scores 0.93 (0.95, 0.93, 0.91), so the mean gap
-is 0.13. It is not a clean sweep: Sonnet is below the reference in 7 of 9 missions and slightly
-above it in two (0.92 and 0.91 against 0.905 on seed 3). What separates them is consistency. The
-reference never drops below 0.83; Sonnet ranges from 0.45 to 0.92 on the same worlds. Its worst
-mission had a near-perfect hypothesis and lost 0.43 while aiming inside smoke columns.
+**Against frontier models.** On the three seeds the models played, the reference scores 0.88
+(0.91, 0.88, 0.84).
+
+- Claude Sonnet 5.5 scores 0.71 and is below the reference in 8 of 9 missions (one mission at
+  0.86 against 0.84). Its losses come from fitting (0.16) and from the choice of experiments
+  (0.09); it uses 24 to 36 of the 120 calculations.
+- Claude Haiku 5.5 is not a usable comparison yet. Six of its nine missions were ended by the
+  model provider's safety filter before any real drop, and score 0. The three it completed score
+  0.64, 0.94 and 0.85, two of them above the reference on that seed.
+- Claude Sonnet 4.5 could not play at all: the same filter stops its first request every time.
+
+So the gap to a frontier model exists but is not robust: it holds for Sonnet 5.5 on this sample,
+and three completed Haiku 5.5 missions say the reference can be matched. The safety-filter
+refusals are a problem of the environment's framing (computing an aerial release point under wind
+resembles dispersion modelling), not of the models' play, and no wording change was attempted to
+get around them. Results recorded earlier with a 10 m radius are in `results/archive/radius-10m/`.
 
 **What is and is not established.** The reference, the baselines, the reward and its exploit
 tests are measured and reproducible with the command above. The five heuristics are *not* LLM
 runs: each is the reference with one decision degraded, which measures what that decision is
-worth. One frontier model has been run, on three seeds with three runs each; its transcripts are
-in `results/llm/` and `run_eval.py` replays them to check their scores. Nine missions are a small
-sample, and no other model has been tried. To run a model:
+worth. Model transcripts are in `results/llm/`; `run_eval.py` replays them to check their scores.
+Nine missions per model are a small sample. To run a model:
 
 ```bash
 cp .env.example .env      # put your key and model in .env (ignored by git)
@@ -93,7 +105,7 @@ Each target imposes a heading, altitude and speed window ("run-in"), revealed on
 model that holds at altitudes, speeds and headings it may not have tested, and through a smoke
 column of a different strength.
 
-**Score.** For each target, `max(0, 1 - d / 10 m)` where `d` is the distance from the true
+**Score.** For each target, `max(0, 1 - d / 6 m)` where `d` is the distance from the true
 impact to the fire centre. A target that never receives a drop scores -0.5 (it keeps burning).
 The mission score is the mean over the five targets, floored at 0.
 
@@ -119,13 +131,13 @@ Every way of losing points is a decision, and the tools needed to do better are 
 hands. The heuristics table above prices four of them:
 
 1. **Which experiments to run.** Ten identical test drops fit the data perfectly and
-   extrapolate badly (0.55). Shear and veer only show up if altitude varies. The updraft only
+   extrapolate badly (0.39). Shear and veer only show up if altitude varies. The updraft only
    shows up if some drops go through smoke, and is only separable from drag if the same
    condition is also flown in clear air.
 2. **Whether to notice what the instruments say.** The wind readout changes with altitude in
-   speed and direction. An agent that averages it away loses a third of its score (0.56).
+   speed and direction. An agent that averages it away loses more than half of its score (0.37).
 3. **When the fit is good enough.** One coarse pass over the parameters looks fine on the
-   calibration drops and scores anywhere between 0.00 and 0.93 on the targets.
+   calibration drops and scores anywhere between 0.00 and 0.89 on the targets.
 4. **How to aim inside a smoke column.** There, moving the release point by 1 m moves the
    impact by up to 2 m, so "shift by the predicted miss" overshoots and oscillates. The
    correction has to be damped or learned from the last two simulations.
@@ -150,7 +162,7 @@ six numbers scores above 0.97, so nothing outside those six numbers is hidden.
 |---|---|
 | Do nothing, or never call `declare_done` | 0 |
 | Calibrate carefully, never drop | 0 |
-| Stop after two targets | 0.06 (untreated targets score -0.5) |
+| Stop after two targets | 0.03 (untreated targets score -0.5) |
 | Release overhead, random releases, fixed upstream offsets of 40 to 120 m | 0.00 (best offset: 0.004) |
 | Repeat a test drop on a target | impossible: run-in windows are revealed after calibration and differ per target |
 | Use real drops as experiments | impossible: `drop` returns no impact information, one drop per target |

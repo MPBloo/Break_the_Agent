@@ -5,6 +5,8 @@ Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are determinis
 | Agent | Kind | Episodes | Mean | Std | Min | Max | Lost: experiments | Lost: fitting | Lost: aiming |
 |---|---|---|---|---|---|---|---|---|---|
 | Reference solution | reference | 10 | 0.824 | 0.056 | 0.714 | 0.915 |  |  |  |
+| claude-sonnet-5-5 | frontier | 9 | 0.708 | 0.072 | 0.618 | 0.859 | 0.09 | 0.16 | -0.08 |
+| claude-haiku-5-5 | frontier | 9 | 0.270 | 0.389 | 0.000 | 0.942 | 0.17 | 0.17 | 0.27 |
 | Stops fitting early | heuristic | 10 | 0.599 | 0.308 | 0.000 | 0.887 | -0.01 | 0.24 | -0.00 |
 | One flight condition | heuristic | 10 | 0.388 | 0.222 | 0.057 | 0.757 | 0.44 | -0.01 | -0.00 |
 | Assumes uniform wind | heuristic | 10 | 0.367 | 0.168 | 0.044 | 0.669 | 0.37 | 0.09 | -0.00 |
@@ -17,3 +19,5 @@ Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are determinis
 | Do nothing | baseline | 10 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 
 "Lost" columns: mean points lost against the reference on the same seeds, split by cause (see bomber/analysis.py).
+
+claude-haiku-5-5: 6 of 9 missions were cut short by the model provider's safety filter before any real drop and score 0. Mean over the 3 completed missions: 0.810.

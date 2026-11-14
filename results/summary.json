@@ -141,7 +141,134 @@
      "run": 1,
      "score": 0.751
     }
-   ]
+   ],
+   "refused": 0
+  },
+  {
+   "id": "claude-sonnet-5-5",
+   "label": "claude-sonnet-5-5",
+   "group": "frontier",
+   "n": 9,
+   "mean": 0.7078,
+   "std": 0.0718,
+   "min": 0.6178,
+   "max": 0.8587,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.7414
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.6698
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.7768
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.6793
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.7111
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.6235
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.6916
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.6178
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.8587
+    }
+   ],
+   "refused": 0,
+   "lost": {
+    "lost_experiments": 0.0897,
+    "lost_fitting": 0.1585,
+    "lost_aiming": -0.0774
+   }
+  },
+  {
+   "id": "claude-haiku-5-5",
+   "label": "claude-haiku-5-5",
+   "group": "frontier",
+   "n": 9,
+   "mean": 0.27,
+   "std": 0.3886,
+   "min": 0.0,
+   "max": 0.9421,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.6436
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.9421
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.8445
+    }
+   ],
+   "refused": 6,
+   "lost": {
+    "lost_experiments": 0.1667,
+    "lost_fitting": 0.1738,
+    "lost_aiming": 0.2681
+   }
   },
   {
    "id": "quick_fit",
@@ -204,6 +331,7 @@
      "score": 0.7865
     }
    ],
+   "refused": 0,
    "lost": {
     "lost_experiments": -0.0073,
     "lost_fitting": 0.2355,
@@ -271,6 +399,7 @@
      "score": 0.0568
     }
    ],
+   "refused": 0,
    "lost": {
     "lost_experiments": 0.4428,
     "lost_fitting": -0.0071,
@@ -338,6 +467,7 @@
      "score": 0.0439
     }
    ],
+   "refused": 0,
    "lost": {
     "lost_experiments": 0.3687,
     "lost_fitting": 0.0877,
@@ -405,6 +535,7 @@
      "score": 0.0633
     }
    ],
+   "refused": 0,
    "lost": {
     "lost_experiments": 0.5782,
     "lost_fitting": 0.0406,
@@ -472,6 +603,7 @@
      "score": 0.0044
     }
    ],
+   "refused": 0,
    "lost": {
     "lost_experiments": 0.7036,
     "lost_fitting": 0.0808,
@@ -538,7 +670,8 @@
      "run": 1,
      "score": 0.004
     }
-   ]
+   ],
+   "refused": 0
   },
   {
    "id": "calibrate_only",
@@ -600,7 +733,8 @@
      "run": 1,
      "score": 0.0
     }
-   ]
+   ],
+   "refused": 0
   },
   {
    "id": "overhead",
@@ -662,7 +796,8 @@
      "run": 1,
      "score": 0.0
     }
-   ]
+   ],
+   "refused": 0
   },
   {
    "id": "random_policy",
@@ -724,7 +859,8 @@
      "run": 1,
      "score": 0.0
     }
-   ]
+   ],
+   "refused": 0
   },
   {
    "id": "do_nothing",
@@ -786,7 +922,8 @@
      "run": 1,
      "score": 0.0
     }
-   ]
+   ],
+   "refused": 0
   }
  ]
 }

@@ -49,6 +49,7 @@ def _compact_episode(rec: dict) -> dict:
         "log": [[e["n"], e["phase"], e["tool"], e["args"], _compact_result(e["tool"], e["result"])] for e in rec["log"]],
         "notes": (rec.get("agent_extra") or {}).get("notes") or [],
         "usage": (rec.get("agent_extra") or {}).get("usage"),
+        "stopped": (rec.get("agent_extra") or {}).get("stopped"),
         "att": rec.get("attribution"),
         "error": rec.get("agent_error"),
         "replay_ok": rec.get("replay_ok"),
@@ -68,7 +69,7 @@ def build_report(groups: list[dict], summary: dict, out_path: str, fragment_path
         s = stats[g["id"]]
         agents.append({"id": g["id"], "label": g["label"], "group": g["group"], "desc": g["desc"],
                        "n": s["n"], "mean": s["mean"], "std": s["std"], "min": s["min"], "max": s["max"],
-                       "lost": s.get("lost"), "episodes": idx})
+                       "lost": s.get("lost"), "refused": s.get("refused", 0), "episodes": idx})
     data = {
         "meta": {"config": summary["config"], "seeds": summary["seeds"],
                  "generated": datetime.date.today().isoformat()},
