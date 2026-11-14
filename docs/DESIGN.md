@@ -42,6 +42,21 @@ calibration fire, so calibration can never touch a target's smoke column.
 Observation noise on test drops: 1.5 m on each impact coordinate, 0.05 s on fall time, 0.5 m/s
 and 4 degrees on the wind readout.
 
+## 2b. Experiment: a changing wind (variant "weather")
+
+To test whether adapting to new information separates the models from the reference, the variant
+`weather` (`--variant weather` in `run_llm.py`) changes the wind speed and direction at 100 m between
+calibration and operation (a front moves through: 15 to 35 degrees, factor 0.7 to 1.35). Everything
+else stays, the briefing says so, and `measure_wind(altitude)` gives 20 free, noisy readings over the
+hotspots. Ignoring the change scores 0; the reference, which converts readings at its drop altitudes
+back to 100 m and averages them, scores 0.81 on 30 seeds.
+
+Claude Opus 5.5, nine missions on seeds 1 to 3: 0.839 against 0.838 for the reference. Its updated
+wind was within 0.12 m/s and 1.4 degrees of the truth in every mission, and it spread its readings
+over many altitudes. Opus adapts to announced new information as well as the reference does, so the
+variant does not widen the gap and is not the default. Its transcripts are in `results/llm/` and
+appear under "Earlier runs".
+
 ## 3. Calibration history: what changed and why
 
 The first version was too forgiving, and the numbers showed it. They are kept here because the

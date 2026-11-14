@@ -66,7 +66,18 @@
   ],
   "window_heading": 20.0,
   "window_altitude": 20.0,
-  "window_speed": 10.0
+  "window_speed": 10.0,
+  "name": "base",
+  "weather_change": false,
+  "weather_dir_shift": [
+   15.0,
+   35.0
+  ],
+  "weather_speed_factor": [
+   0.7,
+   1.35
+  ],
+  "n_wind_readings": 20
  },
  "seeds": [
   1,
@@ -1107,6 +1118,69 @@
     "lost_experiments": 0.0346,
     "lost_fitting": 0.1709,
     "lost_aiming": -0.1238
+   }
+  },
+  {
+   "id": "claude-opus-5-5-weather-2026-11-15",
+   "label": "claude-opus-5-5-weather-2026-11-15",
+   "group": "legacy",
+   "n": 9,
+   "mean": 0.8392,
+   "std": 0.0637,
+   "min": 0.7499,
+   "max": 0.9738,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.8923
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.8401
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.8103
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.8475
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.9738
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.8044
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.7694
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.8651
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.7499
+    }
+   ],
+   "refused": 0,
+   "lost": {
+    "lost_experiments": -0.0311,
+    "lost_fitting": 0.0468,
+    "lost_aiming": -0.0169
    }
   },
   {

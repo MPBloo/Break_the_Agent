@@ -20,6 +20,7 @@ Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are determinis
 | Random actions | baseline | 10 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 | Do nothing | baseline | 10 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 | claude-haiku-5-5 | legacy | 9 | 0.270 | 0.389 | 0.000 | 0.942 | 0.03 | 0.17 | -0.12 |
+| claude-opus-5-5-weather-2026-11-15 | legacy | 9 | 0.839 | 0.064 | 0.750 | 0.974 | -0.03 | 0.05 | -0.02 |
 | claude-sonnet-5-5 | legacy | 9 | 0.708 | 0.072 | 0.618 | 0.859 | 0.03 | 0.24 | -0.08 |
 | haiku-high-nouvel-essai | legacy | 9 | 0.000 | 0.000 | 0.000 | 0.000 |  |  |  |
 

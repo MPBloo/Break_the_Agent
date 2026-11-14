@@ -149,7 +149,8 @@ def main() -> int:
     with Pool(a.workers) as pool:
         records = pool.map(_play, [(ag, s, "base") for ag in AGENTS for s in seeds])
     llm = _load_llm(a.out)
-    if any(_rec_variant(r) == "weather" for r in llm):
+    presented_ids = {m["id"] for m in _load_presented(a.out)}
+    if any(_rec_variant(r) == "weather" and r["agent"] in presented_ids for r in llm):
         print(f"      and the reference and its no-update twin on the weather variant ...", flush=True)
         with Pool(a.workers) as pool:
             records += pool.map(_play, [(ag, s, "weather") for ag in WEATHER_AGENTS for s in seeds])
