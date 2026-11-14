@@ -145,129 +145,8 @@
    "refused": 0
   },
   {
-   "id": "haiku-high-nouvel-essai",
-   "label": "haiku-high-nouvel-essai",
-   "group": "frontier",
-   "n": 9,
-   "mean": 0.0,
-   "std": 0.0,
-   "min": 0.0,
-   "max": 0.0,
-   "scores": [
-    {
-     "seed": 1,
-     "run": 1,
-     "score": 0.0
-    },
-    {
-     "seed": 1,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 1,
-     "run": 3,
-     "score": 0.0
-    },
-    {
-     "seed": 2,
-     "run": 1,
-     "score": 0.0
-    },
-    {
-     "seed": 2,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 2,
-     "run": 3,
-     "score": 0.0
-    },
-    {
-     "seed": 3,
-     "run": 1,
-     "score": 0.0
-    },
-    {
-     "seed": 3,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 3,
-     "run": 3,
-     "score": 0.0
-    }
-   ],
-   "refused": 9
-  },
-  {
-   "id": "claude-sonnet-5-5",
-   "label": "claude-sonnet-5-5",
-   "group": "frontier",
-   "n": 9,
-   "mean": 0.7078,
-   "std": 0.0718,
-   "min": 0.6178,
-   "max": 0.8587,
-   "scores": [
-    {
-     "seed": 1,
-     "run": 1,
-     "score": 0.7414
-    },
-    {
-     "seed": 1,
-     "run": 2,
-     "score": 0.6698
-    },
-    {
-     "seed": 1,
-     "run": 3,
-     "score": 0.7768
-    },
-    {
-     "seed": 2,
-     "run": 1,
-     "score": 0.6793
-    },
-    {
-     "seed": 2,
-     "run": 2,
-     "score": 0.7111
-    },
-    {
-     "seed": 2,
-     "run": 3,
-     "score": 0.6235
-    },
-    {
-     "seed": 3,
-     "run": 1,
-     "score": 0.6916
-    },
-    {
-     "seed": 3,
-     "run": 2,
-     "score": 0.6178
-    },
-    {
-     "seed": 3,
-     "run": 3,
-     "score": 0.8587
-    }
-   ],
-   "refused": 0,
-   "lost": {
-    "lost_experiments": 0.0897,
-    "lost_fitting": 0.1585,
-    "lost_aiming": -0.0774
-   }
-  },
-  {
    "id": "claude-sonnet-5-5-canadair-2026-11-14",
-   "label": "claude-sonnet-5-5-canadair-2026-11-14",
+   "label": "Claude Sonnet 5.5",
    "group": "frontier",
    "n": 9,
    "mean": 0.7296,
@@ -330,7 +209,7 @@
   },
   {
    "id": "claude-sonnet-4-5-20250929-canadair-2026-11-14",
-   "label": "claude-sonnet-4-5-20250929-canadair-2026-11-14",
+   "label": "Claude Sonnet 4.5",
    "group": "frontier",
    "n": 9,
    "mean": 0.3148,
@@ -392,71 +271,8 @@
    }
   },
   {
-   "id": "claude-haiku-5-5",
-   "label": "claude-haiku-5-5",
-   "group": "frontier",
-   "n": 9,
-   "mean": 0.27,
-   "std": 0.3886,
-   "min": 0.0,
-   "max": 0.9421,
-   "scores": [
-    {
-     "seed": 1,
-     "run": 1,
-     "score": 0.0
-    },
-    {
-     "seed": 1,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 1,
-     "run": 3,
-     "score": 0.6436
-    },
-    {
-     "seed": 2,
-     "run": 1,
-     "score": 0.0
-    },
-    {
-     "seed": 2,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 2,
-     "run": 3,
-     "score": 0.0
-    },
-    {
-     "seed": 3,
-     "run": 1,
-     "score": 0.9421
-    },
-    {
-     "seed": 3,
-     "run": 2,
-     "score": 0.0
-    },
-    {
-     "seed": 3,
-     "run": 3,
-     "score": 0.8445
-    }
-   ],
-   "refused": 6,
-   "lost": {
-    "lost_experiments": 0.0634,
-    "lost_fitting": 0.1165,
-    "lost_aiming": -0.1238
-   }
-  },
-  {
    "id": "claude-haiku-5-5-canadair-2026-11-14",
-   "label": "claude-haiku-5-5-canadair-2026-11-14",
+   "label": "Claude Haiku 5.5",
    "group": "frontier",
    "n": 9,
    "mean": 0.0,
@@ -1166,6 +982,190 @@
     }
    ],
    "refused": 0
+  },
+  {
+   "id": "claude-haiku-5-5",
+   "label": "claude-haiku-5-5",
+   "group": "legacy",
+   "n": 9,
+   "mean": 0.27,
+   "std": 0.3886,
+   "min": 0.0,
+   "max": 0.9421,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.6436
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.9421
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.8445
+    }
+   ],
+   "refused": 6,
+   "lost": {
+    "lost_experiments": 0.0634,
+    "lost_fitting": 0.1165,
+    "lost_aiming": -0.1238
+   }
+  },
+  {
+   "id": "claude-sonnet-5-5",
+   "label": "claude-sonnet-5-5",
+   "group": "legacy",
+   "n": 9,
+   "mean": 0.7078,
+   "std": 0.0718,
+   "min": 0.6178,
+   "max": 0.8587,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.7414
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.6698
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.7768
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.6793
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.7111
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.6235
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.6916
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.6178
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.8587
+    }
+   ],
+   "refused": 0,
+   "lost": {
+    "lost_experiments": 0.0897,
+    "lost_fitting": 0.1585,
+    "lost_aiming": -0.0774
+   }
+  },
+  {
+   "id": "haiku-high-nouvel-essai",
+   "label": "haiku-high-nouvel-essai",
+   "group": "legacy",
+   "n": 9,
+   "mean": 0.0,
+   "std": 0.0,
+   "min": 0.0,
+   "max": 0.0,
+   "scores": [
+    {
+     "seed": 1,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.0
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.0
+    }
+   ],
+   "refused": 9
   }
  ]
 }
