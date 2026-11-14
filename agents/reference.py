@@ -7,8 +7,9 @@ Its edge is method, not information:
   1. Experiments chosen to separate the unknowns: three altitudes, two speeds,
      opposite headings, first in clear air, then the same conditions repeated
      through the smoke column (paired experiment).
-  2. One-parameter-at-a-time refinement with `compare`: try a bit less, a bit
-     more, keep the best. Only arithmetic an agent could do by hand.
+  2. Fitting with `compare`: first one parameter at a time (try a bit less, a
+     bit more, keep the best), then all six together by least squares on every
+     measurement, the aircraft's wind readings included.
   3. Aim each target with `simulate`, correcting the release point from the
      predicted miss until the prediction is on the target.
 
@@ -25,6 +26,35 @@ AIM_RESERVE = 30    # calculations kept for aiming the five targets
 CLEAR = [(0, 90, 60), (180, 90, 60), (90, 40, 50), (270, 40, 70), (90, 140, 70), (270, 140, 50)]
 # indices into CLEAR whose conditions are repeated through the smoke column
 PAIRED = [0, 2, 4, 5]
+
+W_WIND = 3.0        # impact noise (1.5 m per axis) / wind-reading noise (0.5 m/s): weight of a reading
+FD_STEP = {"drag": 0.0005, "wind_speed": 0.1, "wind_dir": 0.5, "shear": 0.01, "veer": 1.0, "updraft": 0.1}
+
+
+def wind_vector(hyp, z):
+    """The briefing's wind formula, evaluated by hand (no tool call)."""
+    zc = max(z, 2.0)
+    speed = hyp["wind_speed"] * (zc / 100.0) ** hyp["shear"]
+    a = math.radians(hyp["wind_dir"] + hyp["veer"] * (zc - 100.0) / 100.0)
+    return speed * math.sin(a), speed * math.cos(a)
+
+
+def _solve(a, b):
+    """Gaussian elimination with partial pivoting for a small linear system."""
+    n = len(b)
+    m = [row[:] + [b[i]] for i, row in enumerate(a)]
+    for c in range(n):
+        p = max(range(c, n), key=lambda r: abs(m[r][c]))
+        if abs(m[p][c]) < 1e-15:
+            return None
+        m[c], m[p] = m[p], m[c]
+        for r in range(n):
+            if r != c:
+                f = m[r][c] / m[c][c]
+                for k in range(c, n + 1):
+                    m[r][k] -= f * m[c][k]
+    return [m[i][n] / m[i][i] for i in range(n)]
+
 
 class OutOfBudget(Exception):
     pass
@@ -45,6 +75,7 @@ class Reference:
         self.fit_updraft = fit_updraft
         self.polish = polish
         self.updraft_steps = (4.0, 1.5, 0.5)
+        self.readings = []
         self.calcs_left = None
         self.bounds = {}
         self.hyp = {}
@@ -54,7 +85,15 @@ class Reference:
     # ----------------------------------------------------------- experiments
     def _test(self, heading, altitude, speed, x, y):
         r = self.c.call("test_drop", heading=heading, altitude=altitude, speed=speed, x=round(x, 1), y=round(y, 1))
+        self._record_wind(r)
         return r
+
+    def _record_wind(self, r):
+        """Keep the aircraft's wind reading of a test drop as a measurement for the fit."""
+        if "error" not in r:
+            w = r["wind_at_aircraft"]
+            a = math.radians(w["toward_deg"])
+            self.readings.append((w["altitude"], w["speed"] * math.sin(a), w["speed"] * math.cos(a)))
 
     def clear_air_tests(self):
         """Six drops well away from the smoke: the track passes 400 m to the side of the fire."""
@@ -158,20 +197,86 @@ class Reference:
             j0 = self.refine(key, step, ids, j0)
         return j0
 
+    # ------------------------------------------- polish: least squares on everything measured
+    def residuals(self, hyp, ids):
+        """One `compare` call, turned into a vector of residuals: impact (m), fall time (weighted to
+        metres) and, computed by hand from the briefing's wind formula, the aircraft wind readings."""
+        if self.calcs_left is not None and self.calcs_left <= AIM_RESERVE:
+            raise OutOfBudget
+        args = {k: round(v, 6) for k, v in hyp.items()}
+        args["wind_dir"] %= 360.0
+        r = self.c.call("compare", **args)
+        if "error" in r:
+            if "calculations" in r["error"]:
+                raise OutOfBudget
+            return None
+        self.calcs_left = r["calculations_left"]
+        out = []
+        for row in r["rows"]:
+            if row[0] in ids:
+                out += [row[1], row[2], W_T * row[3]]
+        for z, ox, oy in self.readings:
+            px, py = wind_vector(hyp, z)
+            out += [W_WIND * (px - ox), W_WIND * (py - oy)]
+        return out
+
+    def least_squares(self, keys, ids):
+        """Levenberg-Marquardt: finite-difference slopes from one `compare` per parameter, then a
+        damped Gauss-Newton step, accepted only if the residuals shrink."""
+        lam = 1e-2
+        r0 = self.residuals(self.hyp, ids)
+        if r0 is None:
+            return
+        c0 = sum(v * v for v in r0)
+        while self.calcs_left is None or self.calcs_left - len(keys) - 1 > AIM_RESERVE:
+            cols = []
+            for k in keys:
+                h = dict(self.hyp)
+                h[k] += FD_STEP[k]
+                rk = self.residuals(h, ids)
+                if rk is None:
+                    return
+                cols.append([(a - b) / FD_STEP[k] for a, b in zip(rk, r0)])
+            n = len(keys)
+            jtj = [[sum(a * b for a, b in zip(cols[i], cols[j])) for j in range(n)] for i in range(n)]
+            jtr = [sum(a * b for a, b in zip(cols[i], r0)) for i in range(n)]
+            moved = False
+            for _ in range(3):
+                step = _solve([[jtj[i][j] + (lam * jtj[i][i] if i == j else 0.0) for j in range(n)] for i in range(n)],
+                              [-v for v in jtr])
+                if step is None:
+                    return
+                cand = dict(self.hyp)
+                for k, dk in zip(keys, step):
+                    lo, hi = self.bounds[k]
+                    v = cand[k] + dk
+                    cand[k] = v if lo is None else min(hi, max(lo, v))
+                rc = self.residuals(cand, ids)
+                if rc is None:
+                    return
+                cc = sum(v * v for v in rc)
+                if cc < c0:
+                    self.hyp, r0, c0, lam, moved = cand, rc, cc, lam / 3, True
+                    break
+                lam *= 5
+            if not moved:
+                return
+
     def fit(self, clear_ids, smoke_ids):
         steps = {"drag": 0.012, "wind_speed": 1.2, "wind_dir": 8.0, "shear": 0.08, "veer": 10.0}
-        fine = {"drag": 0.001, "updraft": 0.3, "wind_speed": 0.2, "wind_dir": 1.5, "shear": 0.02, "veer": 2.0}
+        coarse = self.fit_scales[:2] if self.polish else self.fit_scales
+        updraft_steps = self.updraft_steps[:2] if self.polish else self.updraft_steps
         try:
             j = None
-            for scale in self.fit_scales:
+            for scale in coarse:                  # rough values, one parameter at a time
                 j = self.sweep([(k, steps[k] * scale) for k in self.fit_keys], clear_ids, j)
             if self.fit_updraft and smoke_ids:
                 j = None
-                for step in self.updraft_steps:
+                for step in updraft_steps:
                     j = self.sweep([("updraft", step)], smoke_ids, j)
-            if self.polish:
-                keys = [k for k in fine if k in self.fit_keys or (k == "updraft" and self.fit_updraft and smoke_ids)]
-                self.sweep([(k, fine[k]) for k in keys], clear_ids + smoke_ids)
+            if self.polish:                       # then all parameters together, on everything measured
+                keys = list(self.fit_keys) + (["updraft"] if self.fit_updraft and smoke_ids else [])
+                self.least_squares(keys, clear_ids + smoke_ids)
         except OutOfBudget:
             pass
 
@@ -256,6 +361,7 @@ class Reference:
         tests = []
         for a in test_args:
             r = self.c.call("test_drop", **a)
+            self._record_wind(r)
             if "error" not in r:
                 tests.append({"id": r["test"], "wind": r["wind_at_aircraft"], "smoke": r["entered_smoke"]})
         clear_ids = [t["id"] for t in tests if not t["smoke"]]
