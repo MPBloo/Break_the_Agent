@@ -9,7 +9,7 @@ node video/render.js video/m1_break_the_agent.html video/out/stills --stills 1,5
 ```
 
 Needs Node, Playwright with Chromium, and ffmpeg. To join sections:
-`ffmpeg -i video/out/m1_break_the_agent.mp4 -i video/out/m2_fire_and_water.mp4 -filter_complex "[0:v][1:v]concat=n=2:v=1:a=0[v]" -map "[v]" video/out/m1_m2.mp4`. Rendered files go to `video/out/` (not committed).
+`ffmpeg -i video/out/m1_break_the_agent.mp4 -i video/out/m2_fire_and_water.mp4 -i video/out/m3_the_problem.mp4 -filter_complex "[0:v][1:v][2:v]concat=n=3:v=1:a=0[v]" -map "[v]" video/out/m1_m3_0000-0155.mp4`. Rendered files go to `video/out/` (not committed).
 Fonts: Anton, Inter and JetBrains Mono, under the SIL Open Font License (`video/fonts/`).
 
 ## M1 · Break the Agent (30 s) · cut on a 124 BPM grid (one beat = 0.484 s)
@@ -65,3 +65,22 @@ release point is computed by bisection, as the reference solution does.
 | 36.6 | 1:06.6 | "RELEASE AT THE RIGHT POINT" | hit |
 | 40.0 | 1:10.0 | Freeze; a pixel grid appears, the picture fades | music thins |
 | 42.6 to 44.2 | 1:12.6 | A wide square grid remains: the start of M3 | |
+
+## M3 · The problem to solve (40 s, film time 1:15 to 1:55) · calm explanatory diagrams
+
+Same square grid as the end of M2. Palette: charcoal, bone, ember (fire, unknowns), water blue (measurements, fitted values).
+
+| M3 time (s) | Film | Picture | Sound cue |
+|---|---|---|---|
+| 0.4 to 2.3 | 1:15.4 | Fog, six blurred dials; "THE AIR IS UNKNOWN", "6 numbers decide where the water lands" | low pad, wind |
+| 6.6 to 11.3 | 1:21.6 | The dials come into focus one by one, each with its name (drag, wind speed, wind direction, how wind grows with height, how it turns with height, updraft above a fire) | one soft tick per dial |
+| 12.4 to 13.4 | 1:27.4 | The dials shrink into a panel on the right: "the agent's model of the air" | whoosh |
+| 13.0 | 1:28.0 | ① CALIBRATE, side view, calibration fire with its updraft, altitudes 150 / 90 / 30 m, counter "10 TEST DROPS LEFT" | |
+| 13.7 to 22.4 | 1:28.7 | Ten test drops (one every 0.88 s) at different altitudes and speeds; the aircraft reads the wind; each impact is measured with a noise ring; the counter goes down to 0 | a drop and a tick per test |
+| 23.2 | 1:38.2 | ② BUILD A MODEL, counter "120 CALCULATIONS LEFT" | |
+| 23.6 to 28.2 | 1:38.6 | Predicted paths (dotted, bone) slide onto the measured ones, the ember error lines shrink; the needles settle and the six values appear in blue; counter 120 → 38 | rising tone that resolves |
+| 29.0 | 1:44.0 | ③ COMMIT, top view: five hotspots far from the calibration fire, each with an imposed heading; "5 DROPS LEFT · NO FEEDBACK" | |
+| 30.6 to 35.2 | 1:45.6 | Five drops (one every 1.15 s); each impact is covered by a "?" box | release swoosh, then silence on each "?" |
+| 37.0 to 37.7 | 1:52.0 | The scoring ring: 1 at the centre, 0 at 6 m; "SCORE: 1 AT THE CENTRE, 0 AT 6 M" | hit |
+| 38.2 | 1:53.2 | The hidden impact is revealed, 1.62 m off: 0.73; "computed by the environment, after the last drop" | soft chime |
+| 39.3 to 40.0 | 1:54.3 | Everything fades to the charcoal background: the start of M4 | |

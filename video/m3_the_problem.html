@@ -1,0 +1,311 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>M3 · The problem</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// M3 · THE PROBLEM TO SOLVE · 40 s, explanatory diagrams.
+// 0-13 the air is six unknown numbers · 13-23 step 1, calibrate: ten noisy test drops · 23-29 step 2,
+// build a model: predictions converge on the measurements, calculations run down · 29-37 step 3, commit:
+// five blind drops, each impact hidden · 37-40 the score: 1 on the centre, 0 at 6 m.
+window.DURATION = 40;
+const W = 1920, H = 1080;
+const C = { ch: '#0E0F12', bone: '#F2EEE6', ember: '#FF5A1F', water: '#3BA3FF', smoke: '#6B6F78', dim: '#2a2c33' };
+const cv = document.getElementById('c'), x = cv.getContext('2d');
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+const eOut = (k) => 1 - Math.pow(1 - k, 3);
+const eOutBack = (k) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let r = Math.imul(seed ^ (seed >>> 15), 1 | seed); r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r; return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+function text(s, px, py, size, o = {}) {
+  x.save(); x.font = `${o.weight || 400} ${size}px ${o.font || 'Inter'}`; x.fillStyle = o.color || C.bone;
+  x.globalAlpha *= o.alpha == null ? 1 : o.alpha; x.textAlign = o.align || 'left'; x.textBaseline = o.baseline || 'alphabetic';
+  x.letterSpacing = (o.spacing || 0) + 'px'; x.fillText(s, px, py); x.restore();
+}
+function line(x0, y0, x1, y1, color, w = 2, dash = null, alpha = 1) {
+  x.save(); x.strokeStyle = color; x.lineWidth = w; x.globalAlpha *= alpha; if (dash) x.setLineDash(dash); x.lineCap = 'round';
+  x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke(); x.restore();
+}
+function dot(px, py, r, color, alpha = 1) { x.save(); x.globalAlpha *= alpha; x.fillStyle = color; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill(); x.restore(); }
+function arrowHead(px, py, ang, size, color) {
+  x.save(); x.translate(px, py); x.rotate(ang); x.fillStyle = color; x.beginPath(); x.moveTo(0, 0); x.lineTo(-size, -size * 0.55); x.lineTo(-size, size * 0.55); x.closePath(); x.fill(); x.restore();
+}
+
+// ---------------------------------------------------------------- the grid this scene picks up from M2
+function grid(alpha) {
+  x.save(); x.strokeStyle = C.smoke; x.globalAlpha = 0.22 * alpha; x.lineWidth = 1; x.beginPath();
+  for (let gx = 0; gx <= W; gx += 48) { x.moveTo(gx + 0.5, 0); x.lineTo(gx + 0.5, H); }
+  for (let gy = 12; gy <= H; gy += 48) { x.moveTo(0, gy + 0.5); x.lineTo(W, gy + 0.5); }
+  x.stroke(); x.restore();
+}
+
+// ---------------------------------------------------------------- the six dials (the hypothesis)
+const DIALS = [
+  { label: 'drag', value: '0.027' }, { label: 'wind speed', value: '10.9 m/s' }, { label: 'wind direction', value: '204°' },
+  { label: 'how wind grows with height', value: '0.24' }, { label: 'how it turns with height', value: '−1° / 100 m' }, { label: 'updraft above a fire', value: '3.4 m/s' },
+];
+const R = rng(3);
+DIALS.forEach((d, i) => { d.target = -2.2 + R() * 4.4; d.wob = 0.6 + R() * 1.4; d.ph = R() * 6; });
+// layout of the dial panel: big in the fog (k = 0), small on the right (k = 1)
+function dialLayout(i, k) {
+  const col = i % 3, row = Math.floor(i / 3);
+  const big = { x: 620 + col * 340, y: 470 + row * 250, r: 72 };
+  const sc = i % 2, sr = Math.floor(i / 2);
+  const small = { x: 1550 + sc * 220, y: 250 + sr * 180, r: 40 };
+  return { x: lerp(big.x, small.x, k), y: lerp(big.y, small.y, k), r: lerp(big.r, small.r, k) };
+}
+// needle angle: wandering while unknown, settling on a value as the model is fitted (fit 0..1)
+function needle(d, t, fit) {
+  const wander = Math.sin(t * d.wob + d.ph) * 2.4 + Math.sin(t * d.wob * 0.37 + d.ph * 2) * 1.2;
+  return lerp(wander, d.target, eInOut(fit));
+}
+function dial(d, i, t, L, focus, fit, showLabel, labelAlpha) {
+  x.save(); x.translate(L.x, L.y);
+  x.filter = focus < 1 ? `blur(${(1 - focus) * 7}px)` : 'none';
+  x.globalAlpha = lerp(0.45, 1, focus);
+  x.strokeStyle = C.bone; x.lineWidth = 2; x.beginPath(); x.arc(0, 0, L.r, 0, Math.PI * 2); x.stroke();
+  for (let k = 0; k < 24; k++) {          // ticks
+    const a = (k / 24) * Math.PI * 2; const r1 = L.r * (k % 6 === 0 ? 0.78 : 0.86);
+    line(Math.cos(a) * r1, Math.sin(a) * r1, Math.cos(a) * L.r * 0.94, Math.sin(a) * L.r * 0.94, C.smoke, 1.5);
+  }
+  const a = needle(d, t, fit) - Math.PI / 2;
+  line(0, 0, Math.cos(a) * L.r * 0.72, Math.sin(a) * L.r * 0.72, fit > 0.98 ? C.water : C.ember, Math.max(2, L.r / 22));
+  dot(0, 0, Math.max(3, L.r / 12), C.bone);
+  x.filter = 'none';
+  const known = fit > 0.98;
+  text('?', 0, L.r * 0.5 + L.r * 0.18, L.r * 0.42, { font: 'JBM', weight: 700, align: 'center', alpha: 1 - fit });
+  if (known) text(d.value, 0, L.r + 56, 20, { font: 'JBM', weight: 700, align: 'center', color: C.water, alpha: seg(fit, 0.98, 1) });
+  if (showLabel) text(d.label, 0, L.r + 30, 17 + clamp((L.r - 40) / 32) * 7, { align: 'center', color: C.bone, alpha: labelAlpha });
+  x.restore();
+}
+
+// ---------------------------------------------------------------- step header and counter
+function header(step, title, alpha) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  x.fillStyle = C.ember; x.beginPath(); x.arc(150, 118, 30, 0, Math.PI * 2); x.fill();
+  text(String(step), 150, 132, 40, { font: 'Anton', align: 'center', color: C.ch });
+  text(title, 200, 140, 64, { font: 'Anton', spacing: 2 });
+  x.restore();
+}
+function counter(value, unit, alpha) {
+  if (alpha <= 0) return;
+  text(String(value), 1180, 140, 72, { font: 'JBM', weight: 700, align: 'right', alpha });
+  text(unit, 1200, 132, 26, { font: 'JBM', color: C.smoke, alpha, spacing: 3 });
+}
+
+// ---------------------------------------------------------------- step 1: side view, ten test drops
+const GROUND = 860, FIREX = 690;
+const ALTS = [{ y: 360, label: '150 m' }, { y: 560, label: '90 m' }, { y: 760, label: '30 m' }];
+const R2 = rng(17);
+const TESTS = Array.from({ length: 10 }, (_, i) => {
+  const alt = ALTS[[0, 1, 2, 1, 0, 2, 0, 1, 2, 1][i]];
+  const speed = [1, 1.25, 0.85, 1.15, 0.9, 1.2, 1.1, 0.9, 1.3, 1.0][i];
+  const relX = 260 + R2() * 520, smoke = Math.abs(relX + 180 * speed - FIREX) < 140;
+  return { t: 13.7 + i * 0.88, y: alt.y, speed, relX, smoke, noise: [(R2() - 0.5) * 26, 0] };
+});
+function dropPath(tst, k) {     // a curved fall: carried forward and by the wind, pushed up near the fire
+  const fall = GROUND - tst.y, dx = 150 * tst.speed + fall * 0.35;
+  const xk = tst.relX + dx * (1 - Math.pow(1 - k, 1.6));
+  const lift = tst.smoke ? Math.sin(k * Math.PI) * 40 : 0;
+  return [xk, tst.y + 18 + (fall - 18) * k * k - lift];
+}
+function landing(tst) { const [lx] = dropPath(tst, 1); return [lx + tst.noise[0], GROUND]; }
+function planeSide(px, py, s = 1, color = C.bone) {
+  x.save(); x.translate(px, py); x.scale(s, s); x.fillStyle = color;
+  x.beginPath(); x.moveTo(-46, -4); x.lineTo(30, -6); x.quadraticCurveTo(48, -2, 46, 6); x.lineTo(-38, 8); x.closePath(); x.fill();   // fuselage
+  x.fillRect(-10, -12, 34, 5);                                                                                                   // high wing
+  x.beginPath(); x.moveTo(-46, -4); x.lineTo(-52, -26); x.lineTo(-40, -26); x.lineTo(-30, -4); x.closePath(); x.fill();            // fin
+  x.restore();
+}
+function sideView(t, alpha, opts = {}) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  line(120, GROUND, 1300, GROUND, C.bone, 2);
+  ALTS.forEach((a) => { line(120, a.y, 1300, a.y, C.smoke, 1.5, [6, 10], 0.6); text(a.label, 120, a.y - 12, 20, { font: 'JBM', color: C.smoke }); });
+  // calibration fire and its updraft
+  for (let k = 0; k < 4; k++) {
+    const ph = (t * 0.6 + k / 4) % 1;
+    x.save(); x.strokeStyle = C.ember; x.globalAlpha *= 0.35 * (1 - ph); x.lineWidth = 2; x.setLineDash([4, 8]);
+    x.beginPath(); for (let s = 0; s <= 20; s++) { const yy = GROUND - 20 - s * 18 - ph * 40, xx = FIREX + Math.sin(s * 0.6 + t * 2 + k) * 10 + (k - 1.5) * 22; s ? x.lineTo(xx, yy) : x.moveTo(xx, yy); } x.stroke(); x.restore();
+  }
+  x.fillStyle = C.ember; x.beginPath(); x.moveTo(FIREX - 26, GROUND); x.quadraticCurveTo(FIREX - 18, GROUND - 46, FIREX, GROUND - 62); x.quadraticCurveTo(FIREX + 20, GROUND - 40, FIREX + 26, GROUND); x.closePath(); x.fill();
+  text('calibration fire', FIREX, GROUND + 40, 22, { align: 'center', color: C.smoke });
+  TESTS.forEach((tst, i) => {
+    const d = t - tst.t;
+    if (d < -0.6) return;
+    // the aircraft crossing, with its wind reading
+    if (d < 0.9 && !opts.noPlanes) {
+      const k = seg(d, -0.6, 0.9), px = lerp(tst.relX - 300 * tst.speed, tst.relX + 260 * tst.speed, k);
+      planeSide(px, tst.y, 0.9);
+      if (d > 0 && d < 0.8) { text(`wind ${(8.6 + i * 0.37).toFixed(1)} m/s`, px + 60, tst.y - 18, 20, { font: 'JBM', color: C.water, alpha: 1 - seg(d, 0.6, 0.8) }); }
+    }
+    if (d < 0) return;
+    const k = seg(d, 0, 0.85);
+    // the real fall leaves a faint trail
+    x.save(); x.fillStyle = C.water; x.globalAlpha *= k < 1 ? 0.55 : 0.28;
+    for (let s = 0; s <= 28 * k; s++) { const [px, py] = dropPath(tst, s / 28); x.beginPath(); x.arc(px, py, 2.4, 0, Math.PI * 2); x.fill(); }
+    x.restore();
+    if (k < 1) { const [px, py] = dropPath(tst, k); dot(px, py, 9, C.water); }
+    // measured impact: a dot and a ring showing the measurement noise
+    if (k >= 1) {
+      const [lx, ly] = landing(tst), age = d - 0.85;
+      dot(lx, ly, 8, C.water);
+      x.save(); x.strokeStyle = C.water; x.globalAlpha *= 0.5; x.setLineDash([3, 5]); x.lineWidth = 1.5;
+      x.beginPath(); x.arc(lx, ly, 18 + 4 * Math.sin(t * 5 + i), 0, Math.PI * 2); x.stroke(); x.restore();
+      if (age < 0.3) { x.save(); x.strokeStyle = C.water; x.globalAlpha *= 1 - age / 0.3; x.lineWidth = 2; x.beginPath(); x.arc(lx, ly, 10 + age * 120, 0, Math.PI * 2); x.stroke(); x.restore(); }
+    }
+    // step 2: the model's predicted path, converging on the measurement
+    if (opts.fit != null) {
+      const off = (1 - eInOut(opts.fit)) * (i % 2 ? 1 : -1) * (60 + (i * 23) % 70);
+      const [lx] = landing(tst);
+      x.save(); x.strokeStyle = C.bone; x.globalAlpha *= 0.75; x.setLineDash([2, 7]); x.lineWidth = 2; x.beginPath();
+      for (let s = 0; s <= 30; s++) { const [px, py] = dropPath(tst, s / 30); const xx = px + off * (s / 30) * (s / 30); s ? x.lineTo(xx, py) : x.moveTo(xx, py); }
+      x.stroke(); x.restore();
+      const ex = lx - tst.noise[0] + off;
+      line(ex, GROUND - 2, lx, GROUND - 2, C.ember, 3, null, 0.9 * (1 - eInOut(opts.fit)));
+      dot(ex, GROUND, 5, C.bone);
+    }
+  });
+  x.restore();
+}
+
+// ---------------------------------------------------------------- step 3: top view, five blind drops
+const CAL = { x: 300, y: 640 };
+const HOT = [{ x: 980, y: 470, hd: 70 }, { x: 1250, y: 400, hd: 160 }, { x: 1500, y: 600, hd: 300 }, { x: 1150, y: 780, hd: 40 }, { x: 1620, y: 860, hd: 250 }];
+function planeTop(px, py, ang, s = 1) {
+  x.save(); x.translate(px, py); x.rotate(ang); x.scale(s, s); x.fillStyle = C.bone;
+  x.beginPath(); x.ellipse(0, 0, 34, 6, 0, 0, Math.PI * 2); x.fill();    // fuselage
+  x.fillRect(-6, -36, 12, 72);                                              // wing
+  x.fillRect(-32, -14, 8, 28);                                              // tail
+  x.restore();
+}
+function topView(t, alpha, focusK) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  dot(CAL.x, CAL.y, 9, C.ember, 0.6);
+  text('calibration fire', CAL.x, CAL.y + 42, 22, { align: 'center', color: C.smoke });
+  line(CAL.x + 30, CAL.y - 10, 920, 500, C.smoke, 1.5, [4, 10], 0.5);
+  text('far from calibration', 600, 545, 20, { color: C.smoke, align: 'center', alpha: 0.8 });
+  HOT.forEach((h, i) => {
+    const appear = seg(t, 29.3 + i * 0.12, 29.7 + i * 0.12);
+    if (appear <= 0) return;
+    const pulse = 1 + 0.12 * Math.sin(t * 6 + i);
+    dot(h.x, h.y, 14 * pulse * appear, C.ember);
+    x.save(); x.strokeStyle = C.ember; x.globalAlpha *= 0.4 * appear; x.lineWidth = 2; x.beginPath(); x.arc(h.x, h.y, 34, 0, Math.PI * 2); x.stroke(); x.restore();
+    // the imposed heading
+    const a = (h.hd - 90) * Math.PI / 180, ax0 = h.x - Math.cos(a) * 120, ay0 = h.y - Math.sin(a) * 120;
+    line(ax0, ay0, h.x - Math.cos(a) * 52, h.y - Math.sin(a) * 52, C.bone, 2, [8, 8], appear);
+    arrowHead(h.x - Math.cos(a) * 46, h.y - Math.sin(a) * 46, a, 14, C.bone);
+    text(`${String(h.hd).padStart(3, '0')}°`, ax0 - Math.cos(a) * 30, ay0 - Math.sin(a) * 30 + 7, 20, { font: 'JBM', align: 'center', color: C.smoke, alpha: appear });
+    // the drop: aircraft along the heading, water released before the fire, then a curtain over the impact
+    const td = 30.6 + i * 1.15, d = t - td;
+    if (d > -0.5 && d < 0.6) { const k = seg(d, -0.5, 0.6); planeTop(lerp(ax0 - Math.cos(a) * 80, h.x + Math.cos(a) * 140, k), lerp(ay0 - Math.sin(a) * 80, h.y + Math.sin(a) * 140, k), a, 0.9); }
+    if (d >= 0 && d < 0.55) { const k = eOut(seg(d, 0, 0.55)); dot(lerp(h.x - Math.cos(a) * 70, h.x + 22, k), lerp(h.y - Math.sin(a) * 70, h.y - 14, k), 8, C.water); }
+    if (d >= 0.55) {
+      const k = eOutBack(seg(d, 0.55, 0.9));
+      x.save(); x.globalAlpha *= clamp(k); x.fillStyle = C.ch; x.strokeStyle = C.smoke; x.lineWidth = 2;
+      const s = 58 * clamp(k, 0, 1.2);
+      x.beginPath(); x.roundRect(h.x - s, h.y - s, 2 * s, 2 * s, 12); x.fill(); x.stroke();
+      text('?', h.x, h.y + 18, 52, { font: 'Anton', align: 'center', color: C.smoke, alpha: clamp(k) });
+      x.restore();
+    }
+  });
+  x.restore();
+}
+
+// ---------------------------------------------------------------- the score
+function scoreView(t, alpha) {
+  if (alpha <= 0) return;
+  const cx = 960, cy = 500, R6 = 300;
+  x.save(); x.globalAlpha = alpha;
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, R6);
+  g.addColorStop(0, 'rgba(255,90,31,0.85)'); g.addColorStop(1, 'rgba(255,90,31,0.04)');
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R6 * eOut(seg(t, 37.0, 37.6)), 0, Math.PI * 2); x.fill();
+  x.strokeStyle = C.bone; x.lineWidth = 2; x.beginPath(); x.arc(cx, cy, R6, 0, Math.PI * 2); x.stroke();
+  for (let m = 1; m < 6; m++) { x.save(); x.strokeStyle = C.bone; x.globalAlpha *= 0.18; x.beginPath(); x.arc(cx, cy, R6 * m / 6, 0, Math.PI * 2); x.stroke(); x.restore(); }
+  dot(cx, cy, 10, C.bone);
+  text('1', cx, cy - 26, 40, { font: 'JBM', weight: 700, align: 'center' });
+  line(cx, cy, cx + R6, cy, C.bone, 2, [6, 6]);
+  text('0', cx + R6 + 30, cy + 14, 40, { font: 'JBM', weight: 700, align: 'center' });
+  text('6 m', cx + R6 / 2, cy + 40, 26, { font: 'JBM', align: 'center', color: C.bone });
+  // the hidden impact, revealed only at the end of the mission
+  const rv = seg(t, 38.2, 38.6);
+  if (rv > 0) {
+    const ix = cx - 52, iy = cy - 62;   // 81 px of 300 = 1.62 m -> 1 - 1.62/6 = 0.73
+    dot(ix, iy, 11 * rv, C.water);
+    line(cx, cy, ix, iy, C.water, 2, [4, 6], rv);
+    text('0.73', ix - 24, iy - 22, 30, { font: 'JBM', weight: 700, align: 'right', color: C.water, alpha: rv });
+  }
+  x.restore();
+  text('SCORE: 1 AT THE CENTRE, 0 AT 6 M', 960, 950, 64, { font: 'Anton', align: 'center', spacing: 2, alpha: alpha * seg(t, 37.3, 37.7) });
+  text('computed by the environment, after the last drop', 960, 1004, 24, { align: 'center', color: C.smoke, alpha: alpha * seg(t, 38.4, 38.8) });
+}
+
+// ---------------------------------------------------------------- timeline
+window.render = function (t) {
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none';
+  x.fillStyle = C.ch; x.fillRect(0, 0, W, H);
+  grid(1 - seg(t, 39.3, 40));
+
+  // the air is unknown: fog with six blurred dials, then each comes into focus with its name
+  const toPanel = eInOut(seg(t, 12.4, 13.4));
+  const fogA = seg(t, 0.4, 1.4) * (1 - toPanel);
+  if (fogA > 0) {
+    x.save(); x.globalAlpha = fogA;
+    for (let k = 0; k < 14; k++) {
+      const r3 = rng(100 + k), fx = 460 + r3() * 1000 + Math.sin(t * 0.3 + k) * 40, fy = 330 + r3() * 420 + Math.cos(t * 0.25 + k) * 30, fr = 140 + r3() * 160;
+      const gg = x.createRadialGradient(fx, fy, 0, fx, fy, fr); gg.addColorStop(0, 'rgba(107,111,120,0.20)'); gg.addColorStop(1, 'rgba(107,111,120,0)');
+      x.fillStyle = gg; x.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
+    }
+    x.strokeStyle = C.smoke; x.lineWidth = 1.5; x.setLineDash([6, 10]); x.beginPath(); x.roundRect(420, 300, 1080, 560, 28); x.stroke();
+    x.restore();
+    text('THE AIR IS UNKNOWN', 960, 210, 96, { font: 'Anton', align: 'center', spacing: 3, alpha: seg(t, 0.8, 1.3) * (1 - seg(t, 11.9, 12.5)) });
+    text('6 numbers decide where the water lands', 960, 262, 28, { align: 'center', color: C.smoke, alpha: seg(t, 1.8, 2.3) * (1 - seg(t, 11.9, 12.5)) });
+  }
+  const panelA = t < 13 ? seg(t, 1.0, 2.0) : 1 - seg(t, 28.6, 29.2);
+  const fit = eInOut(seg(t, 23.6, 28.2));
+  if (panelA > 0) {
+    x.save(); x.globalAlpha = panelA;
+    DIALS.forEach((d, i) => {
+      const L = dialLayout(i, toPanel);
+      const focusAt = 6.6 + i * 0.85, focus = eInOut(seg(t, focusAt, focusAt + 0.45));
+      dial(d, i, t, L, toPanel > 0 ? 1 : focus, t < 23 ? 0 : fit, true, seg(t, focusAt + 0.2, focusAt + 0.6));
+    });
+    if (toPanel > 0.5) text(t < 23.6 ? 'the agent’s model of the air' : 'fitted to the measurements', 1660, 830, 22, { align: 'center', color: C.smoke, alpha: seg(toPanel, 0.5, 1) });
+    x.restore();
+  }
+
+  // step 1 and step 2 share the side view
+  const sideA = seg(t, 13.0, 13.6) * (1 - seg(t, 28.6, 29.2));
+  sideView(t, sideA, t >= 23 ? { fit, noPlanes: false } : {});
+  header(1, 'CALIBRATE', seg(t, 13.0, 13.4) * (1 - seg(t, 23.0, 23.4)));
+  const left = 10 - TESTS.filter((tst) => t >= tst.t).length;
+  counter(left, 'TEST DROPS LEFT', seg(t, 13.0, 13.4) * (1 - seg(t, 23.0, 23.4)));
+  header(2, 'BUILD A MODEL', seg(t, 23.2, 23.6) * (1 - seg(t, 28.6, 29.0)));
+  const calcs = Math.round(lerp(120, 38, eInOut(seg(t, 23.6, 28.2))));
+  counter(calcs, 'CALCULATIONS LEFT', seg(t, 23.2, 23.6) * (1 - seg(t, 28.6, 29.0)));
+
+  // step 3: commit
+  const topA = seg(t, 29.0, 29.5) * (1 - seg(t, 36.6, 37.0));
+  topView(t, topA);
+  header(3, 'COMMIT', topA);
+  counter(5 - HOT.filter((h, i) => t >= 30.6 + i * 1.15).length, 'DROPS LEFT · NO FEEDBACK', topA);
+
+  // the score
+  scoreView(t, seg(t, 36.8, 37.2) * (1 - seg(t, 39.4, 40)));
+};
+window.ready = Promise.all(['400 100px Anton', '400 20px Inter', '600 20px Inter', '400 20px JBM', '700 20px JBM'].map((f) => document.fonts.load(f)));
+window.ready.then(() => window.render(0));
+</script>
+</body></html>
