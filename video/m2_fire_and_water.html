@@ -1,0 +1,374 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>M2 · Fire and water</title>
+<style>
+html, body { margin: 0; background: #0E0F12; overflow: hidden; }
+canvas { display: block; image-rendering: pixelated; }
+</style></head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// M2 · THE FIRE AND THE WATER · 45 s, pixel art.
+// The world is drawn at 320x180 "art pixels" and scaled up with nearest-neighbour, 6x at rest.
+// Timeline (local seconds): 0-7.5 an ember becomes a burning hillside (stepped zoom out) · 7.5-14 a
+// Canadair-style water bomber scoops on the lake · 14-24 first drop, released above the fire: the water
+// curves away (wind, drag, heat) and misses · 24-29.6 rewind and replay with the real path traced ·
+// 30-40 second pass, released earlier and upwind: it hits and the fire dies · 40-45 freeze, the pixels
+// resolve into a grid for the next scene.
+// render(t) is deterministic: the only stateful part (the fire simulation) is replayed from t = 0
+// whenever time goes backwards.
+window.DURATION = 45;
+const W = 1920, H = 1080, LW = 320, LH = 180;
+const out = document.getElementById('c'), o = out.getContext('2d');
+const low = document.createElement('canvas'); low.width = LW; low.height = LH;
+const g = low.getContext('2d');
+
+// ---------------------------------------------------------------- palette and helpers
+const P = {
+  ch: '#0E0F12', night: '#16141a', dusk1: '#241a20', dusk2: '#3a1e1c', dusk3: '#5a1a0a', rust: '#8a2a10',
+  red: '#C8261B', ember: '#FF5A1F', orange: '#ffa13a', yellow: '#ffd86a', hot: '#fff3c4', bone: '#F2EEE6',
+  smoke: '#6B6F78', smokeD: '#3c3f47', water: '#3BA3FF', waterL: '#a9dcff', lake: '#10233a', lakeL: '#1e4f7a',
+  pine: '#0f1c16', pine2: '#183026', ground: '#1a1512', ground2: '#2a1d16', char: '#0b0a0a', plane: '#f2c230', planeD: '#b88a10',
+};
+const FIRE_RAMP = [null, P.dusk3, P.dusk3, P.rust, P.rust, P.red, P.red, P.ember, P.ember, P.ember, P.orange, P.orange, P.orange, P.yellow, P.yellow, P.hot];
+const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ss = (k) => { k = clamp(k); return k * k * (3 - 2 * k); };
+const eInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let r = Math.imul(seed ^ (seed >>> 15), 1 | seed); r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r; return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+const px = (x, y, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), 1, 1); };
+const rect = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+const dith = (x, y, a) => BAYER[((y % 4) + 4) % 4][((x % 4) + 4) % 4] / 16 < a;   // ordered-dither transparency
+function ditherCircle(cx, cy, r, c, a) {
+  g.fillStyle = c; const R2 = r * r, x0 = Math.round(cx), y0 = Math.round(cy), ri = Math.ceil(r);
+  for (let y = -ri; y <= ri; y++) for (let x = -ri; x <= ri; x++) if (x * x + y * y <= R2 && dith(x0 + x, y0 + y, a)) g.fillRect(x0 + x, y0 + y, 1, 1);
+}
+
+// ---------------------------------------------------------------- the world
+const FIRE_X = 232;
+function hillY(x) {
+  if (x < 140) return 146;
+  const n = Math.sin(x * 0.21) * 1.2 + Math.sin(x * 0.53 + 1) * 0.8;
+  return Math.round(146 - 44 * ss((x - 140) / 120) + 10 * ss((x - 270) / 50) + n);
+}
+const R0 = rng(11);
+const PINES = []; for (let x = 146; x < 320; x += 4 + Math.floor(R0() * 3)) PINES.push({ x, h: 6 + Math.floor(R0() * 6) });
+const RIDGE = Array.from({ length: LW }, (_, x) => Math.round(104 + Math.sin(x * 0.03) * 6 + Math.sin(x * 0.11 + 2) * 3 + Math.sin(x * 0.27) * 1.5));
+const RIDGE2 = Array.from({ length: LW }, (_, x) => Math.round(122 + Math.sin(x * 0.045 + 1) * 5 + Math.sin(x * 0.17) * 2));
+
+// static background, drawn once
+const base = document.createElement('canvas'); base.width = LW; base.height = LH;
+(function drawBase() {
+  const b = base.getContext('2d');
+  const band = [[0, P.night], [40, P.dusk1], [78, P.dusk2], [104, P.dusk3]];
+  for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) {     // dithered sky bands
+    let i = 0; while (i < band.length - 1 && y >= band[i + 1][0]) i++;
+    const next = band[Math.min(i + 1, band.length - 1)], k = i < band.length - 1 ? (y - band[i][0]) / (next[0] - band[i][0]) : 0;
+    b.fillStyle = dith(x, y, k) ? next[1] : band[i][1]; b.fillRect(x, y, 1, 1);
+  }
+  for (let x = 0; x < LW; x++) { b.fillStyle = '#1d1418'; b.fillRect(x, RIDGE[x], 1, LH - RIDGE[x]); }   // far ridge
+  for (let x = 0; x < LW; x++) { b.fillStyle = '#140f12'; b.fillRect(x, RIDGE2[x], 1, LH - RIDGE2[x]); } // near ridge
+  for (let x = 0; x < LW; x++) {                                                                         // hill and ground
+    const y0 = hillY(x);
+    b.fillStyle = P.ground; b.fillRect(x, y0, 1, LH - y0);
+    b.fillStyle = P.ground2; b.fillRect(x, y0, 1, 1);
+  }
+  for (let y = 146; y < LH; y++) for (let x = 0; x < 141; x++) {                                         // lake
+    b.fillStyle = dith(x, y, (y - 146) / 34) ? P.ch : P.lake; b.fillRect(x, y, 1, 1);
+  }
+  b.fillStyle = P.lakeL; b.fillRect(0, 146, 141, 1);
+  PINES.forEach((p) => {                                                                                 // pines
+    const y0 = hillY(p.x), burnt = Math.abs(p.x - FIRE_X) < 30;
+    for (let r = 0; r < p.h; r++) { const w = Math.max(0, Math.floor((p.h - r) / 2.2)); b.fillStyle = burnt ? P.char : (r % 3 === 0 ? P.pine2 : P.pine); b.fillRect(p.x - w, y0 - r - 1, w * 2 + 1, 1); }
+  });
+})();
+
+// ---------------------------------------------------------------- the fire (doom-fire cellular automaton)
+const FW = 84, FH = 56, FX0 = FIRE_X - 42, STEP = 1 / 24;
+let heat = new Uint8Array(FW * FH), simStep = -1, simRng = rng(5);
+function sourceHeat(x, t, r) {
+  const wx = FX0 + x, d = Math.abs(wx - FIRE_X);
+  const half = 2 + 22 * ss(t / 6);                         // the ember spreads into a fire over 6 s
+  if (d > half) return 0;
+  if (PASS2.landed != null && t > PASS2.landed) {           // the good drop puts it out, from the impact outwards
+    const outR = 34 * ss((t - PASS2.landed) / 1.3);
+    if (d < outR) return 0;
+  }
+  const top = Math.round(6 + 9 * ss(t / 3));
+  return r < 0.82 ? top : Math.max(0, top - 4);
+}
+function stepFire(t) {
+  for (let x = 0; x < FW; x++) heat[x] = sourceHeat(x, t, simRng());
+  for (let y = 1; y < FH; y++) for (let x = 0; x < FW; x++) {
+    const r = Math.floor(simRng() * 3.2), sx = clamp(x - r + 1, 0, FW - 1);
+    const below = heat[(y - 1) * FW + sx];
+    heat[y * FW + x] = Math.max(0, below - ((simRng() < 0.55) ? 1 : 0) - (simRng() < 0.12 ? 1 : 0));
+  }
+}
+function fireAt(t) {
+  const n = Math.floor(t / STEP);
+  if (n < simStep) { heat = new Uint8Array(FW * FH); simStep = -1; simRng = rng(5); }
+  while (simStep < n) { simStep++; stepFire(simStep * STEP); }
+}
+function drawFire() {
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+    const h = heat[y * FW + x]; if (!h) continue;
+    const wx = FX0 + x; px(wx, hillY(wx) - y, FIRE_RAMP[h]);
+  }
+}
+function fireStrength(t) {        // 0..1, how much is burning (drives glow and smoke)
+  let s = ss(t / 6); if (PASS2.landed != null && t > PASS2.landed) s *= 1 - ss((t - PASS2.landed) / 1.6); return s;
+}
+
+// ---------------------------------------------------------------- physics of a drop
+const G = 70, WIND = 16, UPDRAFT = 55, COLUMN = 26, SPEED = 40, ALT = 52;
+const BELLY = [24, 13];   // where the water leaves the aircraft sprite
+function air(x, y, burning) {
+  const dx = x - FIRE_X; let up = 0;
+  if (burning && Math.abs(dx) < COLUMN) up = UPDRAFT * (1 - (dx / COLUMN) ** 2) * clamp((hillY(x) - y) / 15);
+  return [WIND, -up];
+}
+function fly(x, y, vx, vy, k, dtTotal, burning) {   // integrate until dtTotal or landing
+  const dt = 1 / 240; let t = 0, path = null;
+  while (t < dtTotal) {
+    const [ax0, ay0] = air(x, y, burning), rx = vx - ax0, ry = vy - ay0, s = Math.hypot(rx, ry);
+    vx += -k * s * rx * dt; vy += (G - k * s * ry) * dt; x += vx * dt; y += vy * dt; t += dt;
+    if (y >= hillY(x)) return { x, y: hillY(x), landed: true, tLand: t };
+  }
+  return { x, y, landed: false };
+}
+function landingX(xRelease, k) { return fly(xRelease, ALT + BELLY[1], SPEED, 0, k, 8, true).x; }
+// where to release so that the core of the load lands on the fire (found by bisection, like the reference does)
+let lo = 60, hi = FIRE_X; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (landingX(m, 0.019) < FIRE_X) lo = m; else hi = m; }
+const GOOD_RELEASE = (lo + hi) / 2;          // where the belly must be
+const R1 = rng(23);
+const DROPLETS = Array.from({ length: 170 }, (_, i) => ({ d: R1() * 0.4, ox: (R1() - 0.5) * 3, oy: R1() * 2, vx: (R1() - 0.5) * 7, vy: (R1() - 0.3) * 6,
+  k: i < 140 ? 0.012 + R1() * 0.014 : 0.03 + R1() * 0.02, c: R1() < 0.35 ? 'L' : 'W' }));
+
+// the plane: pass 1 scoops on the lake then releases above the fire; pass 2 releases at GOOD_RELEASE
+function plane1(t) {   // x, y at time t
+  const x = -30 + SPEED * (t - 7.5);
+  let y = ALT;
+  if (x < 20) y = lerp(ALT, 134, ss((x + 30) / 50));
+  else if (x < 120) y = 134;
+  else y = lerp(134, ALT, ss((x - 120) / 80));
+  return [x, y];
+}
+const PASS1 = { release: 7.5 + (FIRE_X - BELLY[0] + 30) / SPEED };   // belly right above the fire
+const PASS2 = { start: 30, release: 30 + (GOOD_RELEASE - BELLY[0] + 30) / SPEED, landed: null };
+const plane2 = (t) => [-30 + SPEED * (t - PASS2.start), ALT];
+function drops(releaseT, planeFn, tNow) {   // positions of every droplet of one load
+  return DROPLETS.map((d) => {
+    const tr = releaseT + d.d; if (tNow < tr) return null;
+    const [plx, ply] = planeFn(tr);
+    const r = fly(plx + BELLY[0] + d.ox, ply + BELLY[1] + d.oy, SPEED + d.vx, d.vy, d.k, tNow - tr, true);
+    return { ...r, c: d.c, sinceLand: r.landed ? (tNow - tr) - r.tLand : 0 };
+  });
+}
+// time at which the core of the good drop lands (drives the fire going out)
+PASS2.landed = (() => { const [plx, ply] = plane2(PASS2.release); return PASS2.release + fly(plx + BELLY[0], ply + BELLY[1], SPEED, 0, 0.019, 8, true).tLand; })();
+const PASS1_LAND = (() => { const [plx, ply] = plane1(PASS1.release); const r = fly(plx + BELLY[0], ply + BELLY[1], SPEED, 0, 0.019, 8, true); return { t: PASS1.release + r.tLand, x: r.x }; })();
+// the path of the core of a load, for the dotted line
+function corePath(releaseT, planeFn, tNow) {
+  const pts = []; const [plx, ply] = planeFn(releaseT);
+  for (let dt = 0; dt <= tNow - releaseT; dt += 0.03) { const r = fly(plx + BELLY[0], ply + BELLY[1], SPEED, 0, 0.019, dt, true); pts.push([r.x, r.y]); if (r.landed) break; }
+  return pts;
+}
+
+// ---------------------------------------------------------------- sprites
+const PLANE = [
+  'RRR...........................................',
+  'RRRRRRR.......................................',
+  '.RRR..........................................',
+  '.YRR..........................................',
+  '.YYR........GGGGGGGGGGGG......................',
+  '.YYY....KKKKKKKKKKKKKKKKKKKKKKKK..............',
+  '..YYY.......GGGGGGGGGGGG......................',
+  '..YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY.....',
+  '..YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYWWWYY...',
+  '...YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY.',
+  '...RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
+  '....DDYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYD.',
+  '.......DDDYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYDD..',
+  '...........DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD....',
+];
+const PCOL = { R: P.red, Y: P.plane, D: P.planeD, K: P.ch, G: P.smokeD, W: P.bone };
+function drawPlane(x, y, t) {
+  PLANE.forEach((row, r) => { for (let c = 0; c < row.length; c++) { const k = row[c]; if (k !== '.') px(x + c, y + r, PCOL[k]); } });
+  const blink = Math.floor(t * 12) % 2;                     // propeller disc in front of the nacelle
+  for (let r = 3; r < 8; r++) if ((r + blink) % 2) px(x + 24, y + r, P.bone);
+}
+
+// 5x7 pixel font for the captions
+const FONT = { A: '01110100011000111111100011000110001', B: '11110100011000111110100011000111110', C: '01110100011000010000100001000101110',
+  D: '11110100011000110001100011000111110', E: '11111100001000011110100001000011111', F: '11111100001000011110100001000010000',
+  G: '01110100011000010111100011000101111', H: '10001100011000111111100011000110001', I: '01110001000010000100001000010001110',
+  L: '10000100001000010000100001000011111', N: '10001110011010110011100011000110001', O: '01110100011000110001100011000101110',
+  P: '11110100011000111110100001000010000', R: '11110100011000111110101001001010001', S: '01111100001000001110000010000111110',
+  T: '11111001000010000100001000010000100', U: '10001100011000110001100011000101110', V: '10001100011000110001100010101000100',
+  W: '10001100011000110101101011010101010', ' ': '00000000000000000000000000000000000' };
+function pixelText(str, cx, cy, b, color, alpha = 1) {   // drawn in screen space, b = screen px per font pixel
+  const w = str.length * 6 * b - b; let x0 = Math.round(cx - w / 2), y0 = Math.round(cy - 3.5 * b);
+  o.save(); o.globalAlpha = alpha;
+  for (const pass of [[P.ch, b], [color, 0]]) {
+    o.fillStyle = pass[0];
+    [...str].forEach((ch, i) => { const f = FONT[ch] || FONT[' ']; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (f[r * 5 + c] === '1') o.fillRect(x0 + (i * 6 + c) * b + pass[1], y0 + r * b + pass[1], b, b); });
+  }
+  o.restore();
+}
+function arrow(x, y, dir, len, color) {    // art-pixel arrow
+  const [dx, dy] = { r: [1, 0], l: [-1, 0], u: [0, -1] }[dir];
+  for (let i = 0; i < len; i++) px(x + dx * i, y + dy * i, color);
+  const hx = x + dx * (len - 1), hy = y + dy * (len - 1);
+  for (let i = 1; i < 3; i++) { if (dy) { px(hx - i, hy - dy * i, color); px(hx + i, hy - dy * i, color); } else { px(hx - dx * i, hy - i, color); px(hx - dx * i, hy + i, color); } }
+}
+function label(word, x, y, dir, a) {      // small caption on the art canvas, written by the pixel font at 1 px
+  if (a <= 0) return;
+  const f = [...word]; g.globalAlpha = a;
+  f.forEach((ch, i) => { const s = FONT[ch]; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (s[r * 5 + c] === '1') px(x + i * 6 + c, y + r, P.bone); });
+  const w = f.length * 6;
+  if (dir === 'r') arrow(x + w + 2, y + 3, 'r', 10, P.bone);
+  if (dir === 'l') arrow(x - 4, y + 3, 'l', 10, P.bone);
+  if (dir === 'u') arrow(x + w / 2 - 1, y - 3, 'u', 9, P.bone);
+  g.globalAlpha = 1;
+}
+
+// ---------------------------------------------------------------- dynamic layers
+const R2 = rng(41);
+const SMOKE = Array.from({ length: 70 }, (_, i) => ({ e: i * 0.65 + R2() * 0.6, x: (R2() - 0.5) * 40, v: 8 + R2() * 8, r: 2 + R2() * 3 }));
+const STEAM = Array.from({ length: 26 }, () => ({ e: R2() * 0.5, x: (R2() - 0.5) * 30, v: 10 + R2() * 14, r: 2 + R2() * 4 }));
+function drawGlow(t) {
+  const s = fireStrength(t); if (s <= 0) return;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  const gr = g.createRadialGradient(FIRE_X, hillY(FIRE_X) - 10, 2, FIRE_X, hillY(FIRE_X) - 10, 110);
+  gr.addColorStop(0, `rgba(255,90,31,${0.30 * s})`); gr.addColorStop(1, 'rgba(255,90,31,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, LW, LH); g.restore();
+  for (let x = 0; x < 141; x++) if (Math.sin(x * 0.7 + t * 4) > 0.75) px(x, 147 + (x % 5), s > 0.3 ? P.rust : P.lakeL);   // lake catching the glow
+}
+function drawSmoke(t) {
+  SMOKE.forEach((p) => {
+    const age = t - p.e; if (age < 0 || age > 9) return;
+    const emitStrength = fireStrength(p.e); if (emitStrength < 0.15) return;
+    const x = FIRE_X + p.x * 0.5 + (WIND * 0.9) * age, y = hillY(FIRE_X) - 14 - p.v * age;
+    ditherCircle(x, y, p.r + age * 1.6, age < 1.5 ? P.smokeD : P.smoke, 0.55 * emitStrength * (1 - age / 9));
+  });
+}
+function drawSteam(t, t0, x0, white) {
+  STEAM.forEach((p) => {
+    const age = t - t0 - p.e; if (age < 0 || age > 4) return;
+    ditherCircle(x0 + p.x * (0.4 + age * 0.3) + WIND * 0.4 * age, hillY(x0) - 2 - p.v * age, p.r + age * 2.2, white ? P.bone : P.smoke, 0.75 * (1 - age / 4));
+  });
+}
+function drawDrops(list) {
+  list.forEach((d) => {
+    if (!d) return;
+    if (d.landed) {
+      if (d.sinceLand < 0.35) { px(d.x, d.y - 1 - (d.sinceLand * 8), P.waterL); }
+      px(d.x, d.y, '#1d2a3a');                               // wet ground
+      return;
+    }
+    px(d.x, d.y, d.c === 'L' ? P.waterL : P.water);
+  });
+}
+function spray(t, x, y) { for (let i = 0; i < 14; i++) { const k = (t * 9 + i * 0.37) % 1; px(x - 4 - k * 18 + (i % 3), y + 10 - Math.sin(k * Math.PI) * (4 + (i % 4)), i % 2 ? P.waterL : P.bone); } }
+function dotted(path, color, n) { path.forEach((p, i) => { if (i % 3 !== 2 && i <= n) { px(p[0], p[1], color); px(p[0] + 1, p[1], color); } }); }
+
+// ---------------------------------------------------------------- scene for an "action time"
+// The world (fire, smoke) follows real time t; the plane and the water follow the action time.
+function world(t, act, opts = {}) {
+  g.drawImage(base, 0, 0);
+  drawGlow(t);
+  drawSmoke(t);
+  fireAt(t); drawFire();
+  // pass 1
+  if (act < 30) {
+    if (act >= 7.5 && act < 17.5) { const [x, y] = plane1(act); drawPlane(x, y, act); if (x > 20 && x < 120) spray(act, x + 6, y + 3); }
+    if (act >= PASS1.release) drawDrops(drops(PASS1.release, plane1, act));
+    if (act >= PASS1_LAND.t) drawSteam(act, PASS1_LAND.t, PASS1_LAND.x, false);
+    if (opts.path) { const path = corePath(PASS1.release, plane1, Math.max(act, PASS1.release)); dotted(path, P.bone, path.length); }
+    if (opts.naive && act >= PASS1.release - 0.2) { const [plx, ply] = plane1(PASS1.release); for (let y = ply + BELLY[1] + 2; y < hillY(plx + BELLY[0]); y += 4) { px(plx + BELLY[0], y, P.bone); px(plx + BELLY[0], y + 1, P.bone); } }
+  } else {
+    // stains left by pass 1 stay on the ground
+    drawDrops(drops(PASS1.release, plane1, 22));
+    const p2 = plane2(act); if (p2[0] < 340) drawPlane(p2[0], p2[1], act);
+    if (act >= PASS2.release) {
+      drawDrops(drops(PASS2.release, plane2, act));
+      const path = corePath(PASS2.release, plane2, act); dotted(path, P.waterL, path.length);
+    }
+    if (act >= PASS2.landed) drawSteam(act, PASS2.landed, FIRE_X, true);
+  }
+}
+
+// ---------------------------------------------------------------- compositing to the screen
+function present(mag, cx, cy, opts = {}) {
+  const vw = W / mag, vh = H / mag;
+  const x0 = clamp(cx - vw / 2, 0, LW - vw), y0 = clamp(cy - vh / 2, 0, LH - vh);
+  o.imageSmoothingEnabled = false;
+  if (opts.glitch) {                                   // rewind: rows slip sideways, a cold tint
+    for (let r = 0; r < LH; r++) { const off = Math.round(Math.sin(r * 0.9 + opts.glitch * 40) * (r % 7 === 0 ? 3 : 0.6)); o.drawImage(low, 0, r, LW, 1, off * mag, r * mag, W, mag); }
+    o.fillStyle = 'rgba(59,163,255,0.08)'; o.fillRect(0, 0, W, H);
+  } else {
+    o.drawImage(low, Math.round(x0 * mag) / mag, Math.round(y0 * mag) / mag, vw, vh, 0, 0, W, H);
+  }
+}
+const MAGS = [24, 20, 16, 12, 10, 8, 6];
+
+window.render = function (t) {
+  o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1;
+  o.fillStyle = P.ch; o.fillRect(0, 0, W, H);
+  const tw = Math.min(t, 40);                         // the world freezes at 40 s
+  if (t < 24) {
+    world(tw, tw, {});
+    const zk = ss(seg(t, 1.2, 7.2)), mag = MAGS[Math.min(MAGS.length - 1, Math.floor(zk * (MAGS.length - 1) + 0.0001))];
+    present(mag, FIRE_X, hillY(FIRE_X) - 8);
+    if (t < 0.6) { o.fillStyle = `rgba(14,15,18,${1 - t / 0.6})`; o.fillRect(0, 0, W, H); }
+    // captions of the first drop
+    if (t >= 16) {
+      g.clearRect(0, 0, 0, 0);
+    }
+  } else if (t < 25.4) {                              // rewind
+    const act = lerp(24, 13.0, eInOut(seg(t, 24, 25.4)));
+    world(tw, act, {});
+    present(6, 160, 90, { glitch: t });
+    pixelText('REWIND', 1920 - 200, 70, 6, P.bone, 0.9);
+  } else if (t < 29.6) {                              // replay with the real path and the naive straight line
+    const act = lerp(13.0, 17.4, seg(t, 25.4, 29.6));
+    world(tw, act, { path: true, naive: true });
+    present(6, 160, 90);
+    pixelText('WATER NEVER FALLS STRAIGHT', W / 2, 120, 9, P.bone, seg(t, 26.0, 26.3));
+  } else if (t < 30) {                                // short cut
+    world(tw, 30, {}); present(6, 160, 90);
+    o.fillStyle = `rgba(14,15,18,${1 - Math.abs(t - 29.8) / 0.2})`; o.fillRect(0, 0, W, H);
+  } else if (t < 40) {                                // second pass
+    world(tw, t, {});
+    present(6, 160, 90);
+    pixelText('RELEASE AT THE RIGHT POINT', W / 2, 120, 9, P.bone, seg(t, PASS2.landed + 0.3, PASS2.landed + 0.6));
+  } else {                                            // freeze, then the pixels become a grid
+    world(40, 40, {});
+    present(6, 160, 90);
+    pixelText('RELEASE AT THE RIGHT POINT', W / 2, 120, 9, P.bone, 1 - seg(t, 40.5, 41.5));
+    const k1 = seg(t, 40.3, 41.6), k2 = seg(t, 41.6, 43.4), k3 = seg(t, 42.6, 44.2);
+    o.fillStyle = `rgba(14,15,18,${k2})`; o.fillRect(0, 0, W, H);          // the picture fades
+    o.save(); o.strokeStyle = P.ch; o.globalAlpha = k1 * (1 - k2); o.lineWidth = 1;   // pixel grid appears on the picture
+    o.beginPath(); for (let x = 0; x <= W; x += 6) { o.moveTo(x + 0.5, 0); o.lineTo(x + 0.5, H); } for (let y = 0; y <= H; y += 6) { o.moveTo(0, y + 0.5); o.lineTo(W, y + 0.5); } o.stroke(); o.restore();
+    o.save(); o.strokeStyle = P.smoke; o.globalAlpha = 0.22 * k3; o.lineWidth = 1;     // and resolves into the square grid of the next scene
+    o.beginPath(); for (let x = 0; x <= W; x += 48) { o.moveTo(x + 0.5, 0); o.lineTo(x + 0.5, H); } for (let y = 12; y <= H; y += 48) { o.moveTo(0, y + 0.5); o.lineTo(W, y + 0.5); } o.stroke(); o.restore();
+  }
+};
+// the captions of the first drop are drawn on the art canvas inside world(); expose them here
+const worldBase = world;
+world = function (t, act, opts) {
+  worldBase(t, act, opts);
+  if (act < 30 && act >= 15.8 && !opts.path) {
+    const a1 = seg(act, 16.2, 16.5), a2 = seg(act, 17.0, 17.3), a3 = seg(act, 17.8, 18.1);
+    const fade = 1 - seg(t, 23.4, 24);
+    label('WIND', 214, 40, 'r', a1 * fade);
+    label('HEAT', FIRE_X - 12, 78, 'u', a2 * fade);
+    label('DRAG', 272, 62, 'l', a3 * fade);
+  }
+};
+window.ready = Promise.resolve();
+window.render(0);
+</script>
+</body></html>

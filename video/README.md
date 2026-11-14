@@ -8,7 +8,8 @@ node video/render.js video/m1_break_the_agent.html video/out/m1_break_the_agent.
 node video/render.js video/m1_break_the_agent.html video/out/stills --stills 1,5,12       # PNG stills
 ```
 
-Needs Node, Playwright with Chromium, and ffmpeg. Rendered files go to `video/out/` (not committed).
+Needs Node, Playwright with Chromium, and ffmpeg. To join sections:
+`ffmpeg -i video/out/m1_break_the_agent.mp4 -i video/out/m2_fire_and_water.mp4 -filter_complex "[0:v][1:v]concat=n=2:v=1:a=0[v]" -map "[v]" video/out/m1_m2.mp4`. Rendered files go to `video/out/` (not committed).
 Fonts: Anton, Inter and JetBrains Mono, under the SIL Open Font License (`video/fonts/`).
 
 ## M1 · Break the Agent (30 s) · cut on a 124 BPM grid (one beat = 0.484 s)
@@ -37,3 +38,30 @@ Fonts: Anton, Inter and JetBrains Mono, under the SIL Open Font License (`video/
 | 27.55 | A drop of water falls | |
 | 28.30 | The drop hits the ember and puts it out | splash, then silence |
 | 29.00 to 30.00 | Hold on the final frame | |
+
+## M2 · The fire and the water (45 s, film time 0:30 to 1:15) · pixel art
+
+Drawn at 320x180 and scaled 6x without smoothing. The fire is a cellular automaton; the water follows the
+same kind of physics as the environment (gravity, drag, wind, the updraft above the fire). The second
+release point is computed by bisection, as the reference solution does.
+
+| Local time | Film time | What happens | Cue for the sound |
+|---|---|---|---|
+| 0.0 | 0:30.0 | A single small flame (picks up from the ember of M1), stepped zoom out | crackle |
+| 1.2 to 7.2 | 0:31.2 | The flame spreads into a burning hillside; smoke | fire bed, wind |
+| 7.5 | 0:37.5 | The water bomber enters from the left, descends to the lake | propeller in |
+| 8.5 to 11.8 | 0:38.5 | Skims and scoops (spray) | water rush |
+| 11.8 to 13.4 | 0:41.8 | Climbs toward the fire | engine strain |
+| 13.45 | 0:43.45 | First release, right above the fire | release swoosh |
+| 15.0 | 0:45.0 | The water lands beside the fire, grey steam; the fire keeps burning | hiss, "miss" |
+| 16.2 / 17.0 / 17.8 | 0:46.2 | Labels WIND, HEAT, DRAG appear | three ticks |
+| 24.0 to 25.4 | 0:54.0 | Rewind (rows slip, "REWIND") | tape rewind |
+| 25.4 to 29.6 | 0:55.4 | Replay: dashed straight line (what you would expect) and the real curved path | |
+| 26.0 | 0:56.0 | "WATER NEVER FALLS STRAIGHT" | hit |
+| 29.6 to 30.0 | 0:59.6 | Quick dip to black | |
+| 30.0 | 1:00.0 | Second pass enters from the left | propeller in |
+| 34.8 | 1:04.8 | Release, earlier and upwind | release swoosh |
+| 36.3 | 1:06.3 | The water lands on the fire; it goes out from the centre; white steam | big hiss, relief |
+| 36.6 | 1:06.6 | "RELEASE AT THE RIGHT POINT" | hit |
+| 40.0 | 1:10.0 | Freeze; a pixel grid appears, the picture fades | music thins |
+| 42.6 to 44.2 | 1:12.6 | A wide square grid remains: the start of M3 | |
