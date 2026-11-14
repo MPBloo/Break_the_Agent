@@ -50,3 +50,12 @@ def quick_fit(client):
     r = Reference(client, fit_scales=(1.0,), polish=False)
     r.updraft_steps = (4.0,)
     r.run()
+
+
+def ignores_weather(client):
+    """Weather variant: plays exactly like the reference, but keeps the calibration wind for the
+    operation instead of reading the new one."""
+    r = Reference(client)
+    r._operate_original = r._operate
+    r._operate = lambda travel, max_targets=None, update_wind=True: r._operate_original(travel, max_targets, update_wind=False)
+    r.run()

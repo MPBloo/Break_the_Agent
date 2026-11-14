@@ -82,6 +82,19 @@ TOOLS = [
 ]
 TOOL_NAMES = [t["name"] for t in TOOLS]
 
+MEASURE_WIND = {
+    "name": "measure_wind",
+    "description": "OPERATION PHASE, weather variant only. Read the aircraft's instruments: the wind at a chosen altitude over the hotspots, now. Noisy like the calibration readings. Free of calculations, limited number of readings.",
+    "parameters": _schema({"altitude": {"type": "number", "description": "Altitude above ground, m."}}),
+}
+
+
+def tools_for(cfg: Config) -> list[dict]:
+    """The tools an agent gets under this configuration."""
+    if not cfg.weather_change:
+        return TOOLS
+    return TOOLS[:5] + [MEASURE_WIND] + TOOLS[5:]
+
 INSTRUCTION = (
     "You are the flight-support computer for a Canadair-style aerial firefighting aircraft. Five "
     "wildfire hotspots must each receive one water drop. Where the water load lands depends on the "
@@ -95,6 +108,16 @@ INSTRUCTION = (
 
 def briefing(cfg: Config) -> str:
     c = cfg
+    weather = ""
+    if c.weather_change:
+        weather = f"""
+WEATHER CHANGE
+A weather front moves through between the calibration and the operation. Over the hotspots, the
+wind speed and direction at 100 m (wind_speed, wind_dir) are not the calibration values any more;
+drag, shear, veer and updraft do not change. During the operation, `measure_wind(altitude)` reads
+the wind at the chosen altitude over the hotspots, with the same noise as the calibration readings
+(about {c.noise_wind_speed} m/s and {c.noise_wind_dir:g} degrees). You have {c.n_wind_readings} readings; they cost no calculation.
+"""
     return f"""CANADAIR FIRE-SUPPRESSION MISSION BRIEFING
 
 OBJECTIVE
@@ -150,7 +173,7 @@ its own position and intensity (between {c.target_intensity[0]} and {c.target_in
 hotspot imposes a flight heading range, an altitude range and a speed range, which can lie anywhere in
 the flight envelope; a drop outside these ranges is refused. The hotspots are far from the calibration
 fire. Use `drop` once per hotspot. A real drop returns no information about where it landed.
-
+{weather}
 SCORING
 For each hotspot, d is the distance between the true impact point and the fire centre:
   hotspot score = max(0, 1 - d / {c.score_radius:g}).
@@ -169,6 +192,8 @@ class Episode:
         self.tests: list[dict] = []
         self.drops: dict[int, dict] = {}
         self.calcs_used = 0
+        self.wind_readings: list[dict] = []
+        self._tool_names = [t["name"] for t in tools_for(cfg)]
         self.log: list[dict] = []
 
     # ------------------------------------------------------------------ helpers
@@ -234,6 +259,8 @@ class Episode:
         }
         if self.phase != "calibration":
             s["targets_without_drop"] = [t.id for t in self._world.targets if t.id not in self.drops]
+        if self.cfg.weather_change:
+            s["wind_readings_left"] = self.cfg.n_wind_readings - len(self.wind_readings)
         return s
 
     # ------------------------------------------------------------------- tools
@@ -325,16 +352,37 @@ class Episode:
             "calculations_left": self._calcs_left(),
         }
 
+    def _t_measure_wind(self, args: dict) -> dict:
+        if self.phase != "operation":
+            raise ValueError("Wind readings over the hotspots are only possible during the operation phase.")
+        self._check_keys(args, ["altitude"])
+        c = self.cfg
+        z = self._number(args, "altitude", c.altitude_min, c.altitude_max)
+        if len(self.wind_readings) >= c.n_wind_readings:
+            raise ValueError("No wind readings left.")
+        wx, wy = wind_at(self._world.air_op, z)
+        rng = self._obs_rng
+        reading = {"altitude": z,
+                   "speed": round(max(0.0, math.hypot(wx, wy) + rng.gauss(0, c.noise_wind_speed)), 1),
+                   "toward_deg": round((math.degrees(math.atan2(wx, wy)) + rng.gauss(0, c.noise_wind_dir)) % 360.0, 0)}
+        self.wind_readings.append(reading)
+        return {"wind": reading, "wind_readings_left": c.n_wind_readings - len(self.wind_readings)}
+
     def _t_begin_operation(self, args: dict) -> dict:
         self._check_keys(args, [])
         if self.phase != "calibration":
             raise ValueError("The operation phase has already begun.")
         self.phase = "operation"
-        return {
+        out = {
             "status": "Calibration is over. Targets revealed.",
             "targets": [t.public() for t in self._world.targets],
             "calculations_left": self._calcs_left(),
         }
+        if self.cfg.weather_change:
+            out["weather"] = ("A front has moved through: wind speed and direction over the hotspots differ from "
+                              "calibration. Drag, shear, veer and updraft are unchanged. Use measure_wind.")
+            out["wind_readings_left"] = self.cfg.n_wind_readings
+        return out
 
     def _t_drop(self, args: dict) -> dict:
         if self.phase != "operation":
@@ -369,8 +417,8 @@ class Episode:
         args = {} if args is None else args
         phase_before = self.phase
         try:
-            if name not in TOOL_NAMES:
-                raise ValueError(f"Unknown tool '{name}'. Available: {', '.join(TOOL_NAMES)}.")
+            if name not in self._tool_names:
+                raise ValueError(f"Unknown tool '{name}'. Available: {', '.join(self._tool_names)}.")
             if not isinstance(args, dict):
                 raise ValueError("Arguments must be an object.")
             if self.phase == "done":
@@ -400,7 +448,7 @@ class Episode:
             if d is None:
                 rows.append({"id": t.id, "treated": False, "distance": None, "score": c.untreated_score, "impact": None, "path": None})
                 continue
-            p = simulate_drop(self._world.air, fires, path_dt=PATH_DT, **d)
+            p = simulate_drop(self._world.air_op, fires, path_dt=PATH_DT, **d)
             dist = math.hypot(p["x"] - t.fire.x, p["y"] - t.fire.y)
             rows.append({"id": t.id, "treated": True, "distance": round(dist, 2),
                          "score": round(max(0.0, 1.0 - dist / c.score_radius), 4),
@@ -414,6 +462,7 @@ class Episode:
         s = self.score()
         return {
             "seed": self.seed,
+            "variant": self.cfg.name,
             "score": s["score"],
             "targets_scored": [{k: v for k, v in r.items() if k != "path"} for r in s["targets"]],
             "counts": {"test_drops": len(self.tests), "calculations": self.calcs_used,
@@ -422,6 +471,8 @@ class Episode:
             "log": self.log,
             "debrief": {
                 "air": self._world.air.as_dict(),
+                "air_operation": self._world.air_op.as_dict(),
+                "wind_readings": self.wind_readings,
                 "targets": [t.public() for t in self._world.targets],
                 "tests": [{"id": t["id"], **{k: t[k] for k in _DROP_KEYS},
                            "obs": t["obs"], "true": {"x": round(t["true"]["x"], 2), "y": round(t["true"]["y"], 2),

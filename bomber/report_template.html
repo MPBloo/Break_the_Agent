@@ -455,8 +455,13 @@ const DATA = /*__REPORT_DATA__*/null;
   const HYP = [["drag", "Drag", "1/m", 4], ["wind_speed", "Wind speed at 100 m", "m/s", 2], ["wind_dir", "Wind direction at 100 m", "°", 1],
                ["shear", "Shear exponent", "", 3], ["veer", "Veer", "°/100 m", 1], ["updraft", "Updraft", "m/s", 2]];
   const state = { agent: null, ep: null, focus: "t1", yaw: -35, elev: 32, zoom: 1, compare: true };
-  const REF = DATA.agents.find((a) => a.group === "reference");
-  const refEpisode = (seed) => REF && REF.episodes.map((i) => DATA.episodes[i]).find((e) => e.seed === seed);
+  const REF = DATA.agents.find((a) => a.group === "reference" && (a.variant || "base") === "base");
+  // the reference of the same variant: a model played on the changing-wind variant is compared with
+  // the reference on that variant
+  const refEpisode = (seed, variant) => {
+    const R = DATA.agents.find((a) => a.group === "reference" && (a.variant || "base") === (variant || "base"));
+    return R && R.episodes.map((i) => DATA.episodes[i]).find((e) => e.seed === seed);
+  };
   const refused = (e) => e.stopped === "refusal";
 
   // ---------------------------------------------------------------- hero numbers
@@ -467,8 +472,8 @@ const DATA = /*__REPORT_DATA__*/null;
       const eps = a.episodes.map((i) => DATA.episodes[i]).filter((e) => !refused(e));
       if (!eps.length) return null;
       const mean = eps.reduce((t, e) => t + e.score, 0) / eps.length;
-      const refMean = eps.reduce((t, e) => t + (refEpisode(e.seed) || { score: NaN }).score, 0) / eps.length;
-      const below = eps.filter((e) => refEpisode(e.seed) && e.score < refEpisode(e.seed).score).length;
+      const refMean = eps.reduce((t, e) => t + (refEpisode(e.seed, e.variant) || { score: NaN }).score, 0) / eps.length;
+      const below = eps.filter((e) => refEpisode(e.seed, e.variant) && e.score < refEpisode(e.seed, e.variant).score).length;
       return { a, n: eps.length, mean, refMean, below };
     }).filter(Boolean).sort((x, y) => y.mean - x.mean);
     const best = models[0];
@@ -573,7 +578,7 @@ const DATA = /*__REPORT_DATA__*/null;
   function renderCompareButtons() {
     const seg = $("seg-compare");
     seg.replaceChildren();
-    const can = state.agent && state.agent.group !== "reference" && refEpisode(state.ep.seed);
+    const can = state.agent && state.agent.group !== "reference" && refEpisode(state.ep.seed, state.ep.variant);
     [["Side by side", true], ["Agent only", false]].forEach(([label, on]) => {
       const b = el("button", { type: "button", "aria-pressed": String(Boolean(can) && state.compare === on || (!can && !on)), text: label });
       if (!can) b.disabled = true;
@@ -592,7 +597,7 @@ const DATA = /*__REPORT_DATA__*/null;
     };
     $("agent-caption-name").textContent = state.agent ? state.agent.label : "";
     $("agent-caption").textContent = line(ep);
-    $("ref-caption").textContent = line(refEpisode(ep.seed));
+    $("ref-caption").textContent = line(refEpisode(ep.seed, ep.variant));
   }
 
   function renderTiles() {
@@ -600,8 +605,7 @@ const DATA = /*__REPORT_DATA__*/null;
     box.replaceChildren();
     const tile = (k, v, small) => box.appendChild(el("div", { cls: "tile" }, [el("span", { cls: "k", text: k }), el("span", { cls: "v" }, [v, small ? el("small", { text: " " + small }) : ""])]));
     tile("Mission score", f2(ep.score));
-    const ref = DATA.agents.find((a) => a.group === "reference");
-    const refEp = ref && ref.episodes.map((i) => DATA.episodes[i]).find((e) => e.seed === ep.seed);
+    const refEp = refEpisode(ep.seed, ep.variant);
     if (refEp && state.agent.group !== "reference") tile("Reference, same seed", f2(refEp.score));
     tile("Test drops", String(c.test_drops), "of " + CFG.n_test_drops);
     tile("Calculations", String(c.calculations), "of " + CFG.n_calculations);
@@ -630,16 +634,20 @@ const DATA = /*__REPORT_DATA__*/null;
     const ep = state.ep, t = $("hyp"), h = ep._hyp;
     t.replaceChildren();
     t.appendChild(el("tr", {}, [["Unknown", ""], ["Truth", "num"], ["Agent", "num"], ["Error", "num"]].map(([x, c]) => el("th", { cls: c, text: x }))));
-    HYP.forEach(([k, label, unit, d]) => {
+    const opWind = ep.air_op && (ep.air_op.wind_speed !== ep.air.wind_speed || ep.air_op.wind_dir !== ep.air.wind_dir);
+    HYP.forEach(([k, label0, unit, d]) => {
+      const truth = opWind && (k === "wind_speed" || k === "wind_dir") ? ep.air_op : ep.air;
+      const label = truth === ep.air_op && opWind ? label0 + " over the hotspots" : label0;
       let err = "–";
       if (h) {
-        let e = h[k] - ep.air[k];
+        let e = h[k] - truth[k];
         if (k === "wind_dir") e = ((e + 540) % 360) - 180;
         err = (e > 0 ? "+" : "") + e.toFixed(d);
       }
       t.appendChild(el("tr", {}, [el("td", {}, [label, unit ? el("span", { cls: "note", text: " " + unit }) : ""]),
-        el("td", { cls: "num", text: ep.air[k].toFixed(d) }), el("td", { cls: "num", text: h ? Number(h[k]).toFixed(d) : "–" }), el("td", { cls: "num", text: err })]));
+        el("td", { cls: "num", text: truth[k].toFixed(d) }), el("td", { cls: "num", text: h ? Number(h[k]).toFixed(d) : "–" }), el("td", { cls: "num", text: err })]));
     });
+    if (opWind) t.appendChild(el("tr", {}, [el("td", { colspan: "4", cls: "note", text: `Changing-wind variant: during calibration the wind at 100 m was ${f1(ep.air.wind_speed)} m/s toward ${Math.round(ep.air.wind_dir)}°. ${ep.wind_readings.length} in-flight wind readings taken.` })]));
     if (!h) t.appendChild(el("tr", {}, [el("td", { colspan: "4", cls: "note", text: "This agent never evaluated a hypothesis." })]));
   }
 
@@ -738,6 +746,7 @@ const DATA = /*__REPORT_DATA__*/null;
     if (tool === "compare") return `mean miss ${r.mean_miss} m · mean |dt| ${r.mean_abs_dt} s · ${r.calculations_left} calculations left`;
     if (tool === "simulate") return `predicted impact (${r.impact.x}, ${r.impact.y}) · ${r.fall_time} s${r.enters_smoke ? " · through smoke" : ""}`;
     if (tool === "declare_done") return `mission over, score ${r.mission_score}`;
+    if (tool === "measure_wind") return `wind ${r.wind.speed} m/s → ${r.wind.toward_deg}° at ${r.wind.altitude} m · ${r.wind_readings_left} readings left`;
     return r.status && typeof r.status === "string" ? r.status : "ok";
   }
   function renderLog() {
@@ -784,7 +793,7 @@ const DATA = /*__REPORT_DATA__*/null;
   }
   function draw() {
     if (!state.ep) return;
-    const duo = $("bench").classList.contains("duo"), ref = duo ? refEpisode(state.ep.seed) : null;
+    const duo = $("bench").classList.contains("duo"), ref = duo ? refEpisode(state.ep.seed, state.ep.variant) : null;
     const f = focusBox(ref ? [state.ep, ref] : [state.ep]);
     drawOn(cv, state.ep, f);
     if (ref) drawOn(cvRef, ref, f);

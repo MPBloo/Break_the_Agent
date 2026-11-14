@@ -35,9 +35,10 @@ SYSTEM = INSTRUCTION + (
 NUDGE = "The mission is not over. Continue with the tools, and call declare_done when you have finished."
 
 
-def _tool_specs() -> list[dict]:
+def _tool_specs(client=None) -> list[dict]:
+    tools = client.tool_specs() if hasattr(client, "tool_specs") else TOOLS
     out = []
-    for t in TOOLS:
+    for t in tools:
         params = {k: v for k, v in t["parameters"].items() if k != "additionalProperties"}
         out.append({"type": "function", "function": {"name": t["name"], "description": t["description"],
                                                       "parameters": params}})
@@ -85,7 +86,7 @@ def make_agent(cfg: LLMConfig | None = None):
 
     def run(client) -> dict:
         messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": "Begin the mission."}]
-        tools = _tool_specs()
+        tools = _tool_specs(client)
         notes, usage = [], {"prompt_tokens": 0, "completion_tokens": 0, "requests": 0}
         n_calls, nudges, done = 0, 0, False
         while not done and n_calls < cfg.max_tool_calls:

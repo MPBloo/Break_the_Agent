@@ -73,6 +73,47 @@ class Rules(unittest.TestCase):
         self.assertEqual(replay(rec)["score"], rec["score"])
 
 
+class WeatherVariant(unittest.TestCase):
+    """The "weather" variant: the wind changes between calibration and operation."""
+
+    def test_base_variant_is_unchanged(self):
+        from bomber.config import WEATHER
+        base, weather = Episode(5), Episode(5, WEATHER)
+        self.assertEqual(base.call_tool("test_drop", DROP), weather.call_tool("test_drop", DROP))   # same calibration world
+        self.assertEqual(base._world.air_op, base._world.air)
+        self.assertNotEqual(weather._world.air_op.wind_dir, weather._world.air.wind_dir)
+        for k in ("drag", "shear", "veer", "updraft"):
+            self.assertEqual(getattr(weather._world.air_op, k), getattr(weather._world.air, k))
+        self.assertIn("error", base.call_tool("measure_wind", {"altitude": 90}))                  # no such tool in base
+
+    def test_measure_wind_rules(self):
+        from bomber.config import WEATHER
+        e = Episode(5, WEATHER)
+        self.assertIn("error", e.call_tool("measure_wind", {"altitude": 90}))                     # not before the operation
+        op = e.call_tool("begin_operation")
+        self.assertIn("weather", op)
+        for bad in (10, 500, float("nan"), "90"):
+            self.assertIn("error", e.call_tool("measure_wind", {"altitude": bad}))
+        for _ in range(WEATHER.n_wind_readings):
+            self.assertNotIn("error", e.call_tool("measure_wind", {"altitude": 90}))
+        self.assertIn("error", e.call_tool("measure_wind", {"altitude": 90}))                     # budget
+        self.assertEqual(e.calcs_used, 0)                                                         # readings are free
+
+    def test_reading_the_new_wind_is_what_scores(self):
+        from bomber.config import WEATHER
+        from agents import heuristics
+        adapt = run_episode(reference.run, 2, cfg=WEATHER)["score"]
+        ignore = run_episode(heuristics.ignores_weather, 2, cfg=WEATHER)["score"]
+        self.assertGreater(adapt, 0.6)
+        self.assertLess(ignore, 0.1)
+
+    def test_replay_uses_the_recorded_variant(self):
+        from bomber.config import WEATHER
+        rec = run_episode(reference.run, 3, cfg=WEATHER)
+        self.assertEqual(rec["variant"], "weather")
+        self.assertEqual(replay(rec)["score"], rec["score"])
+
+
 class Plumbing(unittest.TestCase):
     def test_mcp_server_exposes_the_same_tools(self):
         try:

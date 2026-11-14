@@ -56,8 +56,24 @@ class Config:
     window_altitude: float = 20.0   # width of the imposed altitude window (m)
     window_speed: float = 10.0      # width of the imposed speed window (m/s)
 
+    # Variant "weather": the wind at the hotspots differs from the calibration wind (a front moved
+    # through). Drag, shear, veer and updraft are unchanged. The agent can read the wind at a chosen
+    # altitude a limited number of times during the operation.
+    name: str = "base"
+    weather_change: bool = False
+    weather_dir_shift: tuple = (15.0, 35.0)     # degrees, sign drawn at random
+    weather_speed_factor: tuple = (0.7, 1.35)
+    n_wind_readings: int = 20
+
     def as_dict(self) -> dict:
         return asdict(self)
 
 
 DEFAULT = Config()
+WEATHER = Config(name="weather", weather_change=True)
+VARIANTS = {"base": DEFAULT, "weather": WEATHER}
+
+
+def variant(name: str | None) -> Config:
+    """The configuration of a named variant ("base" when the name is empty)."""
+    return VARIANTS[name or "base"]

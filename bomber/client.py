@@ -6,7 +6,7 @@ Both go through Episode.call_tool, so results are identical.
 """
 from __future__ import annotations
 
-from .episode import Episode
+from .episode import Episode, tools_for
 
 
 class LocalClient:
@@ -15,6 +15,10 @@ class LocalClient:
 
     def call(self, tool: str, **args) -> dict:
         return self._episode.call_tool(tool, args)
+
+    def tool_specs(self) -> list[dict]:
+        """The tools of this mission (they depend on the variant)."""
+        return tools_for(self._episode.cfg)
 
     def close(self) -> None:
         pass

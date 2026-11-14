@@ -28,23 +28,38 @@ from multiprocessing import Pool
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 
+from agents import heuristics  # noqa: E402
 from agents.registry import AGENTS  # noqa: E402
+from bomber.config import variant  # noqa: E402
 from bomber.analysis import attribute  # noqa: E402
 from bomber.config import DEFAULT  # noqa: E402
 from bomber.report import build_report  # noqa: E402
 from bomber.runner import replay, run_episode  # noqa: E402
 
 
+WEATHER_AGENTS = {   # scripted agents also played on the "weather" variant when a model was run on it
+    "reference": ("reference_weather", "Reference solution, changing wind",
+                  "The reference on the weather variant: it reads the wind over the hotspots and updates its model."),
+    "ignores_weather": ("ignores_weather", "Ignores the wind change",
+                        "Plays like the reference on the weather variant, but keeps the calibration wind."),
+}
+
+
+def _rec_variant(rec: dict) -> str:
+    return rec.get("variant") or "base"
+
+
 def _play(job):
-    agent, seed = job
-    rec = run_episode(AGENTS[agent]["fn"], seed)
-    rec.update(agent=agent, run=1)
+    agent, seed, var = job
+    fn = AGENTS[agent]["fn"] if agent in AGENTS else getattr(heuristics, agent)
+    rec = run_episode(fn, seed, cfg=variant(var))
+    rec.update(agent=agent if var == "base" else WEATHER_AGENTS[agent][0], run=1)
     return rec
 
 
 def _attribute(job):
     rec, ref_score = job
-    return attribute(rec, ref_score)
+    return attribute(rec, ref_score, variant(_rec_variant(rec)))
 
 
 def _load_llm(out_dir: str) -> list[dict]:
@@ -76,7 +91,6 @@ def _load_presented(out_dir: str) -> list[dict]:
 def _presented_table(groups: list[dict], ref_by_seed: dict, path: str) -> None:
     """results/presented.md: the headline table, one row per presented agent, each model compared with
     the reference on the seeds it actually played."""
-    ref = next(g for g in groups if g["group"] == "reference")
     lines = ["# Headline results", "",
              "Each model is compared with the reference on the same worlds (same seeds). A mission ended by the "
              "model provider's safety filter scores 0 and is counted separately: it says nothing about how the "
@@ -84,9 +98,10 @@ def _presented_table(groups: list[dict], ref_by_seed: dict, path: str) -> None:
              "| Agent | Missions | Mean score | Range | Reference on the same seeds | Missions below the reference "
              "| Refused by safety filter | Lost: experiments | Lost: fitting | Lost: aiming |",
              "|---|---|---|---|---|---|---|---|---|---|"]
-    ref_scores = [r["score"] for r in ref["episodes"]]
-    lines.append(f"| **Reference solution** | {len(ref_scores)} seeds | **{st.mean(ref_scores):.2f}** | "
-                 f"{min(ref_scores):.2f} to {max(ref_scores):.2f} | | | | | | |")
+    for ref in (g for g in groups if g["group"] == "reference"):
+        ref_scores = [r["score"] for r in ref["episodes"]]
+        lines.append(f"| **{ref['label']}** | {len(ref_scores)} seeds | **{st.mean(ref_scores):.2f}** | "
+                     f"{min(ref_scores):.2f} to {max(ref_scores):.2f} | | | | | | |")
     for g in groups:
         if g["group"] != "frontier":
             continue
@@ -98,8 +113,9 @@ def _presented_table(groups: list[dict], ref_by_seed: dict, path: str) -> None:
             continue
         sc = [e["score"] for e in played]
         seeds = sorted({e["seed"] for e in played})
-        ref_same = st.mean(ref_by_seed[s] for s in seeds)
-        below = sum(e["score"] < ref_by_seed[e["seed"]] for e in played)
+        var = g.get("variant", "base")
+        ref_same = st.mean(ref_by_seed[(var, s)] for s in seeds)
+        below = sum(e["score"] < ref_by_seed[(var, e["seed"])] for e in played)
         atts = [e["attribution"] for e in played if e.get("attribution")]
         lost = [f"{st.mean(x[k] for x in atts):.2f}" if atts else "" for k in ("lost_experiments", "lost_fitting", "lost_aiming")]
         lines.append(f"| {g['label']} | {len(played)} | {st.mean(sc):.2f} | {min(sc):.2f} to {max(sc):.2f} | "
@@ -131,29 +147,36 @@ def main() -> int:
 
     print(f"[1/5] Playing {len(AGENTS)} scripted agents on seeds {seeds[0]}..{seeds[-1]} ...", flush=True)
     with Pool(a.workers) as pool:
-        records = pool.map(_play, [(ag, s) for ag in AGENTS for s in seeds])
-    ref_by_seed = {r["seed"]: r["score"] for r in records if r["agent"] == "reference"}
+        records = pool.map(_play, [(ag, s, "base") for ag in AGENTS for s in seeds])
+    llm = _load_llm(a.out)
+    if any(_rec_variant(r) == "weather" for r in llm):
+        print(f"      and the reference and its no-update twin on the weather variant ...", flush=True)
+        with Pool(a.workers) as pool:
+            records += pool.map(_play, [(ag, s, "weather") for ag in WEATHER_AGENTS for s in seeds])
+    # reference score per (variant, seed): every model mission is compared with this
+    ref_by_seed = {(_rec_variant(r), r["seed"]): r["score"] for r in records
+                   if r["agent"] in ("reference", "reference_weather")}
 
     if a.no_mcp_check:
         print("[2/5] MCP parity check skipped.")
     else:
         try:
             via_mcp = run_episode(AGENTS["reference"]["fn"], seeds[0], transport="mcp")["score"]
-            same = via_mcp == ref_by_seed[seeds[0]]
+            same = via_mcp == ref_by_seed[("base", seeds[0])]
             ok &= same
             print(f"[2/5] MCP parity: reference on seed {seeds[0]} scores {via_mcp} over MCP, "
-                  f"{ref_by_seed[seeds[0]]} in-process -> {'identical' if same else 'MISMATCH'}")
+                  f"{ref_by_seed[('base', seeds[0])]} in-process -> {'identical' if same else 'MISMATCH'}")
         except ImportError:
             print("[2/5] MCP parity check skipped: the `mcp` package is not installed.")
 
-    llm = _load_llm(a.out)
     bad = 0
     for rec in llm:
         again = replay(rec)
         rec["replay_ok"] = again["score"] == rec["score"]
         bad += not rec["replay_ok"]
-        if rec["seed"] not in ref_by_seed:
-            ref_by_seed[rec["seed"]] = run_episode(AGENTS["reference"]["fn"], rec["seed"])["score"]
+        key = (_rec_variant(rec), rec["seed"])
+        if key not in ref_by_seed:
+            ref_by_seed[key] = run_episode(AGENTS["reference"]["fn"], rec["seed"], cfg=variant(key[0]))["score"]
     ok &= bad == 0
     print(f"[3/5] Frontier-model transcripts: {len(llm)} found in results/llm/, "
           f"{len(llm) - bad} reproduce their stored score on replay" + (f", {bad} DO NOT" if bad else "") + ".")
@@ -164,14 +187,15 @@ def main() -> int:
     played = [r for r in llm if (r.get("agent_extra") or {}).get("stopped") != "refusal"]
     todo = [r for r in records if AGENTS[r["agent"]]["group"] == "heuristic"] + played
     with Pool(a.workers) as pool:
-        for rec, att in zip(todo, pool.map(_attribute, [(r, ref_by_seed[r["seed"]]) for r in todo])):
+        for rec, att in zip(todo, pool.map(_attribute, [(r, ref_by_seed[(_rec_variant(r), r["seed"])]) for r in todo])):
             rec["attribution"] = att
 
     # ---- summary -----------------------------------------------------------------------------
     groups = []
     for name, info in AGENTS.items():
         rs = [r for r in records if r["agent"] == name]
-        groups.append({"id": name, "label": info["label"], "group": info["group"], "desc": info["desc"], "episodes": rs})
+        groups.append({"id": name, "label": info["label"], "group": info["group"], "desc": info["desc"],
+                       "variant": "base", "episodes": rs})
     by_model: dict[str, list[dict]] = {}
     for rec in llm:
         by_model.setdefault(rec["agent"], []).append(rec)
@@ -184,8 +208,16 @@ def main() -> int:
     legacy = [{"id": m, "label": m, "group": "legacy",
                "desc": "Earlier run, kept for the record (earlier briefing or repeated trial).",
                "episodes": rs} for m, rs in sorted(by_model.items()) if m not in names]
-    groups[1:1] = frontier
-    groups.extend(legacy)
+    for g in frontier + legacy:
+        g["variant"] = _rec_variant(g["episodes"][0])
+    weather = []
+    for base_id, (wid, label, desc) in WEATHER_AGENTS.items():
+        rs = [r for r in records if r["agent"] == wid]
+        if rs:
+            weather.append({"id": wid, "label": label, "group": "reference" if base_id == "reference" else "heuristic",
+                            "desc": desc, "variant": "weather", "episodes": rs})
+    groups[1:1] = [g for g in weather if g["group"] == "reference"] + frontier
+    groups.extend([g for g in weather if g["group"] != "reference"] + legacy)
 
     summary = {"config": DEFAULT.as_dict(), "seeds": seeds, "agents": []}
     for g in groups:

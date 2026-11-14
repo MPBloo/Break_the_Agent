@@ -32,6 +32,7 @@ from bomber.envfile import load_env  # noqa: E402
 load_env(os.path.join(ROOT, ".env"))     # before the agents read their settings
 
 from agents.llm_agent import LLMConfig, make_agent  # noqa: E402
+from bomber.config import variant  # noqa: E402
 from bomber.runner import run_episode  # noqa: E402
 
 
@@ -46,6 +47,8 @@ def main() -> int:
     ap.add_argument("--parallel", type=int, default=3)
     ap.add_argument("--transport", choices=["local", "mcp"], default="local",
                     help="'mcp' plays through the real MCP server over stdio")
+    ap.add_argument("--variant", default="base", choices=["base", "weather"],
+                    help="'weather': the wind changes between calibration and operation")
     ap.add_argument("--out", default=os.path.join(ROOT, "results"))
     a = ap.parse_args()
 
@@ -79,7 +82,7 @@ def main() -> int:
         if os.path.exists(path):
             with open(path) as f:
                 return seed, run, json.load(f)["score"], "cached"
-        rec = run_episode(agent, seed, transport=a.transport)
+        rec = run_episode(agent, seed, cfg=variant(a.variant), transport=a.transport)
         rec.update(agent=label, run=run)
         if rec["agent_error"] and rec["counts"]["tool_calls"] == 0:
             return seed, run, None, rec["agent_error"]       # nothing happened: do not store

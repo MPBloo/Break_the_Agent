@@ -17,6 +17,7 @@ def run_episode(agent_fn, seed: int, cfg: Config = DEFAULT, transport: str = "lo
         from .mcp_client import McpClient
         fd, path = tempfile.mkstemp(suffix=".json")
         os.close(fd)
+        os.environ["BOMBER_VARIANT"] = cfg.name
         client = McpClient(seed, path)
         try:
             extra = agent_fn(client)
@@ -40,10 +41,11 @@ def run_episode(agent_fn, seed: int, cfg: Config = DEFAULT, transport: str = "lo
     return record
 
 
-def replay(record: dict, cfg: Config = DEFAULT) -> dict:
+def replay(record: dict, cfg: Config | None = None) -> dict:
     """Re-execute a stored transcript call by call on a fresh world and re-score it.
     Used to verify that a reported score really follows from the logged actions."""
-    episode = Episode(record["seed"], cfg)
+    from .config import variant
+    episode = Episode(record["seed"], cfg or variant(record.get("variant")))
     for entry in record["log"]:
         episode.call_tool(entry["tool"], entry["args"])
     episode.finalize()

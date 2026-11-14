@@ -34,6 +34,7 @@ class Target:
 class World:
     seed: int
     air: Air
+    air_op: Air     # the air during the operation (same as `air` unless the weather changes)
     calibration_fire: Fire
     targets: tuple
 
@@ -74,4 +75,10 @@ def make_world(seed: int, cfg: Config, salt: str = "") -> World:
             altitude=(float(a_lo), float(a_lo + cfg.window_altitude)),
             speed=(float(s_lo), float(s_lo + cfg.window_speed)),
         ))
-    return World(seed=seed, air=air, calibration_fire=calibration_fire, targets=tuple(targets))
+    air_op = air
+    if cfg.weather_change:   # drawn after everything else, so the calibration world is the same as in "base"
+        shift = u(*cfg.weather_dir_shift) * (1 if u(0.0, 1.0) < 0.5 else -1)
+        air_op = Air(drag=air.drag, wind_speed=round(air.wind_speed * u(*cfg.weather_speed_factor), 2),
+                     wind_dir=round((air.wind_dir + shift) % 360.0, 1), shear=air.shear, veer=air.veer,
+                     updraft=air.updraft)
+    return World(seed=seed, air=air, air_op=air_op, calibration_fire=calibration_fire, targets=tuple(targets))

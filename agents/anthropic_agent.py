@@ -66,8 +66,9 @@ class ClaudeConfig:
         return bool(self.api_key or os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
 
-def _tool_specs() -> list[dict]:
-    return [{"name": t["name"], "description": t["description"], "input_schema": t["parameters"]} for t in TOOLS]
+def _tool_specs(client=None) -> list[dict]:
+    tools = client.tool_specs() if hasattr(client, "tool_specs") else TOOLS
+    return [{"name": t["name"], "description": t["description"], "input_schema": t["parameters"]} for t in tools]
 
 
 def make_agent(cfg: ClaudeConfig | None = None):
@@ -80,7 +81,7 @@ def make_agent(cfg: ClaudeConfig | None = None):
         if cfg.api_key:
             kwargs["api_key"] = cfg.api_key
         api = anthropic.Anthropic(**kwargs)
-        tools = _tool_specs()
+        tools = _tool_specs(client)
         shape, betas = _request_shape(api, cfg)
         if cfg.fallbacks:
             betas.append(FALLBACK_BETA)

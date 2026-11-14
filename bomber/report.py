@@ -42,6 +42,8 @@ def _compact_episode(rec: dict) -> dict:
     deb = rec["debrief"]
     return {
         "agent": rec["agent"], "seed": rec["seed"], "run": rec["run"], "score": rec["score"],
+        "variant": rec.get("variant") or "base", "air_op": deb.get("air_operation"),
+        "wind_readings": deb.get("wind_readings") or [],
         "counts": rec["counts"], "scored": rec["targets_scored"],
         "air": deb["air"], "targets": deb["targets"],
         "tests": [{**{k: v for k, v in t.items() if k != "path"}, "path": _thin(t["path"])} for t in deb["tests"]],
@@ -69,7 +71,8 @@ def build_report(groups: list[dict], summary: dict, out_path: str, fragment_path
         s = stats[g["id"]]
         (legacy if g["group"] == "legacy" else agents).append({"id": g["id"], "label": g["label"], "group": g["group"], "desc": g["desc"],
                        "n": s["n"], "mean": s["mean"], "std": s["std"], "min": s["min"], "max": s["max"],
-                       "lost": s.get("lost"), "refused": s.get("refused", 0), "episodes": idx})
+                       "lost": s.get("lost"), "refused": s.get("refused", 0),
+                       "variant": g.get("variant", "base"), "episodes": idx})
     data = {
         "meta": {"config": summary["config"], "seeds": summary["seeds"],
                  "generated": datetime.date.today().isoformat()},

@@ -340,11 +340,37 @@ class Reference:
         self.hyp = {k: (lo + hi) / 2 for k, (lo, hi) in mission["hypothesis_bounds"].items()}
         self.hyp.update(self.start)
 
-    def _operate(self, travel, max_targets=None):
+    def _operate(self, travel, max_targets=None, update_wind=True):
         op = self.c.call("begin_operation")
+        if update_wind and "weather" in op:
+            self.update_wind(op)
         for target in op["targets"][:max_targets]:
             self.aim(target, travel)
         self.c.call("declare_done")
+
+    def update_wind(self, op):
+        """The front changed the wind speed and direction at 100 m; drag, shear, veer and updraft are
+        known from calibration. Read the wind at the altitudes the drops will use, convert each reading
+        back to 100 m with the fitted shear and veer, and average the resulting vectors."""
+        alts = [sum(t["altitude_range"]) / 2 for t in op["targets"]]
+        n = op.get("wind_readings_left", 0)
+        plan = (alts * (n // len(alts) + 1))[:n]
+        sx = sy = 0.0
+        k = 0
+        for z in plan:
+            r = self.c.call("measure_wind", altitude=round(z, 1))
+            if "error" in r:
+                break
+            w = r["wind"]
+            zc = max(w["altitude"], 2.0)
+            speed100 = w["speed"] / (zc / 100.0) ** self.hyp["shear"]
+            dir100 = math.radians(w["toward_deg"] - self.hyp["veer"] * (zc - 100.0) / 100.0)
+            sx += speed100 * math.sin(dir100)
+            sy += speed100 * math.cos(dir100)
+            k += 1
+        if k:
+            self.hyp["wind_speed"] = math.hypot(sx, sy) / k
+            self.hyp["wind_dir"] = math.degrees(math.atan2(sx, sy)) % 360.0
 
     def run(self, max_targets=None):
         self._read_mission()
@@ -377,7 +403,7 @@ class Reference:
         """Aim exactly like the reference, but with a hypothesis built by someone else."""
         self._read_mission()
         self.hyp.update(hyp)
-        self._operate(80.0)
+        self._operate(80.0, update_wind=False)   # the agent's hypothesis already includes its own wind update
 
 
 def run(client):

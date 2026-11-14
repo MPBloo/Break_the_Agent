@@ -6,6 +6,7 @@
 
 Environment variables:
     BOMBER_SEED     world seed of the mission (default 1)
+    BOMBER_VARIANT  "base" (default) or "weather" (the wind changes before the operation)
     BOMBER_SALT     secret mixed into world generation (default empty). Set it whenever the agent
                     can run code and read this public repository, or the hidden air can be rebuilt
                     from the seed. harbor/make_tasks.py sets a random one.
@@ -76,6 +77,13 @@ def build_server(episode: Episode, result_path: str | None = None) -> FastMCP:
         return call("simulate", drag=drag, wind_speed=wind_speed, wind_dir=wind_dir, shear=shear,
                     veer=veer, updraft=updraft, heading=heading, altitude=altitude, speed=speed, x=x, y=y)
 
+    if episode.cfg.weather_change:
+        from .episode import MEASURE_WIND
+
+        @mcp.tool(name="measure_wind", description=MEASURE_WIND["description"])
+        def measure_wind(altitude: Altitude) -> dict:
+            return call("measure_wind", altitude=altitude)
+
     @mcp.tool(name="begin_operation", description=_DESC["begin_operation"])
     def begin_operation() -> dict:
         return call("begin_operation")
@@ -126,7 +134,9 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--seed", type=int, default=int(os.environ.get("BOMBER_SEED", "1")))
     a = ap.parse_args()
-    mcp = build_server(Episode(a.seed, salt=os.environ.get("BOMBER_SALT", "")), os.environ.get("BOMBER_RESULT"))
+    from .config import variant
+    episode = Episode(a.seed, variant(os.environ.get("BOMBER_VARIANT")), salt=os.environ.get("BOMBER_SALT", ""))
+    mcp = build_server(episode, os.environ.get("BOMBER_RESULT"))
     if a.transport == "stdio":
         mcp.run(transport="stdio")
     else:
