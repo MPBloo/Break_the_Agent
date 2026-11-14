@@ -55,7 +55,8 @@ judging criteria ask whether the reward reflects real progress.
 | 4 | Updraft range capped so the strongest column stays below 60 % of the load's terminal speed | 0.93 | 0.61 to 0.86 | Chaotic "hovering" regime removed. |
 | 5 | Hypothesis bounds widened and off-centre; scoring radius 10 m | 0.87, min 0.62 | 0.13 to 0.60 | Mid-range guessing no longer works. |
 | 6 | Reference aiming changed from "shift by the miss" to a secant update | 0.89, min 0.80 on 60 seeds | 0.13 to 0.68 | Claude Sonnet 5.5 then scored 0.80 against 0.93 on the same seeds: too forgiving. |
-| 7 | Scoring radius 10 m to 6 m | **0.82, min 0.67 on 60 seeds** | 0.04 to 0.60 | Current. Sonnet 5.5: 0.71 against 0.88 on the same seeds. |
+| 7 | Scoring radius 10 m to 6 m | 0.82, min 0.67 on 60 seeds | 0.04 to 0.60 | Sonnet 5.5: 0.73 against 0.88; Opus 5.5: 0.85, above the reference in 3 of 9. |
+| 8 | Reference fit ends with least squares on every measurement, wind readings included | **0.846, min 0.71 on 60 seeds** | 0.04 to 0.74 | Current. Opus 5.5 below it in 7 of 9 (0.85 against 0.90). |
 
 Versions 1 to 4 were scored with the 20 m radius, versions 5 and 6 with 10 m, version 7 with 6 m. Versions 1 to 5
 are on 20 or 30 seeds; the degraded-strategy range of version 6 is on the ten default seeds.

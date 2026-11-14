@@ -96,9 +96,54 @@ select { font: inherit; font-size: 14px; text-transform: none; letter-spacing: 0
 .seg button:hover:not([aria-pressed="true"]) { background: var(--wash); }
 
 .bench { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; }
+/* side by side: reference and agent on the same world, readouts below */
+.bench.duo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.bench.duo .side { grid-column: 1 / -1; }
+.scene-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.scene-head b { font-family: var(--font-display); font-size: 15px; }
+.scene-head span { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.scene-ref { display: none; }
+.bench.duo .scene-ref { display: flex; }
+
+/* hero: the story in one look */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: end; }
+.tagline { font-family: var(--font-display); font-size: 21px; line-height: 1.3; font-weight: 500; max-width: 34ch; text-wrap: balance; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.kpi { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kpi .k { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.kpi .v { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.kpi.ref { border-color: var(--s1); box-shadow: inset 0 0 0 1px var(--s1); }
+.kpi.ref .v { color: var(--s1); }
+.head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--wash); }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+
+/* how a mission works: three steps in order */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.step { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.step .n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--surface); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
+.step h3 { font-family: var(--font-display); text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--ink); }
+.step p { font-size: 13.5px; color: var(--ink-2); }
+.step .meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: auto; }
+.step:not(:last-child)::after { content: ""; position: absolute; right: -10px; top: 50%; width: 8px; height: 8px; border-top: 2px solid var(--axis); border-right: 2px solid var(--axis); transform: translateY(-50%) rotate(45deg); }
+
+/* presentation mode: larger type for a screen recording, analysis detail folded away */
+body.present { font-size: 16px; }
+body.present .wrap { max-width: 1440px; gap: 26px; }
+body.present h1 { font-size: 40px; }
+body.present h2 { font-size: 24px; }
+body.present .tagline { font-size: 26px; }
+body.present .kpi .v { font-size: 46px; }
+body.present .kpi .d, body.present .step p, body.present .sub { font-size: 15px; }
+body.present .row-label .name { font-size: 16px; }
+body.present .val { font-size: 14px; }
+body.present .chips, body.present details, body.present .trio, body.present .log-block,
+body.present .note, body.present #lost-panel .sub { display: none; }
 .scene { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-canvas#scene { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); cursor: grab; touch-action: pan-y; display: block; }
-canvas#scene:active { cursor: grabbing; }
+canvas.scene-cv { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); cursor: grab; touch-action: pan-y; display: block; }
+canvas.scene-cv:active { cursor: grabbing; }
 .side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
 .tile { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -134,7 +179,8 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
 .tip .d { color: var(--ink-2); }
 
 @media (max-width: 860px) {
-  .bench, .trio { grid-template-columns: minmax(0, 1fr); }
+  .bench, .bench.duo, .trio, .hero, .steps { grid-template-columns: minmax(0, 1fr); }
+  .step:not(:last-child)::after { display: none; }
 }
 @media (max-width: 560px) {
   h1 { font-size: 25px; }
@@ -149,11 +195,35 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
 
 <div class="wrap">
   <header class="head">
-    <div class="eyebrow">Mission debrief</div>
-    <h1>Canadair Firefighting</h1>
-    <p class="lede">An agent has ten test drops to learn how a water load falls through today's air: drag, a wind that strengthens and turns with altitude, and the updraft above a wildfire. It then commits to one blind water drop on each of five hotspots. The mission score is the mean hit quality over the five hotspots, from 0 to 1.</p>
+    <div class="head-row">
+      <div class="eyebrow">Reinforcement-learning environment · results</div>
+      <button type="button" class="btn" id="btn-present" aria-pressed="false" title="Larger type, details folded (shortcut: P)">Presentation mode</button>
+    </div>
+    <div class="hero">
+      <div class="head">
+        <h1>Canadair Firefighting</h1>
+        <p class="tagline">Ten test drops to learn today's air. Five blind water drops to put out five fires.</p>
+        <p class="lede">Where a water load lands depends on drag, a wind that changes with altitude and the updraft above each fire, and none of it is known in advance. The agent must choose informative experiments, fit a model, then commit without ever seeing where its drops land.</p>
+      </div>
+      <div class="kpis" id="kpis"></div>
+    </div>
     <div class="chips" id="chips"></div>
   </header>
+
+  <section class="panel" aria-labelledby="h-how">
+    <h2 id="h-how">How a mission works</h2>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>Calibrate</h3>
+        <p>Ten test drops over a calibration fire. Each shows where the water landed, how long it fell, and the wind at the aircraft's altitude.</p>
+        <span class="meta" id="meta-1">10 test drops, noisy measurements</span></div>
+      <div class="step"><span class="n">2</span><h3>Build a model</h3>
+        <p>Six numbers describe the air: drag, wind speed and direction, how the wind grows and turns with height, the fire's updraft. <code>compare</code> and <code>simulate</code> test a guess.</p>
+        <span class="meta" id="meta-2">120 calculations in total</span></div>
+      <div class="step"><span class="n">3</span><h3>Commit</h3>
+        <p>One water drop per hotspot, each with its own imposed heading, altitude and speed. No feedback: the agent never sees where the water lands.</p>
+        <span class="meta" id="meta-3">Score per hotspot: 1 on the centre, 0 at 6 m or more</span></div>
+    </div>
+  </section>
 
   <section class="panel" aria-labelledby="h-scores">
     <h2 id="h-scores">Mission score by agent</h2>
@@ -184,11 +254,17 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
       <label class="field" for="sel-ep">Episode<select id="sel-ep"></select></label>
       <div class="field">Look at<div class="seg" id="seg-focus" role="group" aria-label="Part of the map"></div></div>
       <div class="field">View<div class="seg" id="seg-view" role="group" aria-label="Camera"></div></div>
+      <div class="field">Compare<div class="seg" id="seg-compare" role="group" aria-label="Compare with the reference"></div></div>
     </div>
     <div id="ep-banner" class="banner" hidden></div>
-    <div class="bench">
+    <div class="bench" id="bench">
+      <div class="scene scene-ref">
+        <div class="scene-head"><b>Reference solution</b><span id="ref-caption"></span></div>
+        <canvas id="scene-ref" class="scene-cv" tabindex="0" aria-label="3D view of the reference solution on the same world, drag to rotate"></canvas>
+      </div>
       <div class="scene">
-        <canvas id="scene" tabindex="0" aria-label="3D view of drops, drag to rotate"></canvas>
+        <div class="scene-head"><b id="agent-caption-name"></b><span id="agent-caption"></span></div>
+        <canvas id="scene" class="scene-cv" tabindex="0" aria-label="3D view of drops, drag to rotate"></canvas>
         <div class="legend">
           <span><i class="lk" style="border-color:var(--s1)"></i>real drop, true path</span>
           <span><i class="lk" style="border-color:var(--test)"></i>test drop</span>
@@ -224,7 +300,7 @@ pre.brief { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12p
         <p class="note" id="fit-note"></p>
       </div>
     </div>
-    <div class="block">
+    <div class="block log-block">
       <h3>Transcript</h3>
       <div class="log" id="log" tabindex="0"></div>
     </div>
@@ -296,6 +372,9 @@ const DATA = /*__REPORT_DATA__*/null;
    `${CFG.n_targets} hotspots`, `Scoring radius ${CFG.score_radius} m`, `Generated ${DATA.meta.generated}`]
     .forEach((t) => $("chips").appendChild(el("span", { cls: "chip", text: t })));
   $("brief").textContent = DATA.briefing;
+  $("meta-1").textContent = `${CFG.n_test_drops} test drops · impact noise about ${CFG.noise_impact} m`;
+  $("meta-2").textContent = `${CFG.n_calculations} calculations in total, shared by compare and simulate`;
+  $("meta-3").textContent = `Score per hotspot: 1 on the centre, 0 at ${CFG.score_radius} m or more · mean of ${CFG.n_targets}`;
 
   // ------------------------------------------------------------ score chart
   function gridlines(plot) {
@@ -375,7 +454,48 @@ const DATA = /*__REPORT_DATA__*/null;
   // --------------------------------------------------------------- explorer
   const HYP = [["drag", "Drag", "1/m", 4], ["wind_speed", "Wind speed at 100 m", "m/s", 2], ["wind_dir", "Wind direction at 100 m", "°", 1],
                ["shear", "Shear exponent", "", 3], ["veer", "Veer", "°/100 m", 1], ["updraft", "Updraft", "m/s", 2]];
-  const state = { agent: null, ep: null, focus: "t1", yaw: -35, elev: 32, zoom: 1 };
+  const state = { agent: null, ep: null, focus: "t1", yaw: -35, elev: 32, zoom: 1, compare: true };
+  const REF = DATA.agents.find((a) => a.group === "reference");
+  const refEpisode = (seed) => REF && REF.episodes.map((i) => DATA.episodes[i]).find((e) => e.seed === seed);
+  const refused = (e) => e.stopped === "refusal";
+
+  // ---------------------------------------------------------------- hero numbers
+  (function hero() {
+    const box = $("kpis");
+    const kpi = (cls, k, v, d) => box.appendChild(el("div", { cls: "kpi " + cls }, [el("span", { cls: "k", text: k }), el("span", { cls: "v", text: v }), el("span", { cls: "d", text: d })]));
+    const models = DATA.agents.filter((a) => a.group === "frontier").map((a) => {
+      const eps = a.episodes.map((i) => DATA.episodes[i]).filter((e) => !refused(e));
+      if (!eps.length) return null;
+      const mean = eps.reduce((t, e) => t + e.score, 0) / eps.length;
+      const refMean = eps.reduce((t, e) => t + (refEpisode(e.seed) || { score: NaN }).score, 0) / eps.length;
+      const below = eps.filter((e) => refEpisode(e.seed) && e.score < refEpisode(e.seed).score).length;
+      return { a, n: eps.length, mean, refMean, below };
+    }).filter(Boolean).sort((x, y) => y.mean - x.mean);
+    const best = models[0];
+    if (best) {
+      const seeds = new Set(best.a.episodes.map((i) => DATA.episodes[i].seed)).size;
+      kpi("ref", "Reference solution", f2(best.refMean), `Same tools and budgets. Mean on the ${seeds} worlds the models played (${f2(REF.mean)} over ${REF.n}).`);
+      kpi("", "Best frontier model", f2(best.mean), `${best.a.label}: below the reference in ${best.below} of ${best.n} missions.`);
+    } else {
+      kpi("ref", "Reference solution", f2(REF.mean), `Mean over ${REF.n} worlds.`);
+    }
+    const nothing = DATA.agents.find((a) => a.id === "do_nothing"), early = DATA.agents.find((a) => a.id === "stop_early");
+    if (nothing && early) kpi("", "Do nothing", f2(nothing.mean), `Stopping after 2 of 5 hotspots: ${f2(early.mean)}. Avoiding the task earns nothing.`);
+  })();
+
+  // ---------------------------------------------------------------- presentation mode
+  const presentBtn = $("btn-present");
+  const setPresent = (on) => {
+    document.body.classList.toggle("present", on);
+    presentBtn.setAttribute("aria-pressed", String(on));
+    try { localStorage.setItem("canadair-present", on ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+    requestAnimationFrame(() => { if (state.ep) draw(); });
+  };
+  presentBtn.addEventListener("click", () => setPresent(!document.body.classList.contains("present")));
+  document.addEventListener("keydown", (e) => {
+    if ((e.key === "p" || e.key === "P") && !e.ctrlKey && !e.metaKey && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) setPresent(!document.body.classList.contains("present"));
+  });
+  try { if (localStorage.getItem("canadair-present") === "1") document.body.classList.add("present"), presentBtn.setAttribute("aria-pressed", "true"); } catch (e) { /* storage unavailable */ }
   const selAgent = $("sel-agent"), selEp = $("sel-ep");
   DATA.agents.forEach((a) => selAgent.appendChild(el("option", { value: a.id, text: `${a.label} (${f2(a.mean)})` })));
   if ((DATA.legacy || []).length) {
@@ -418,7 +538,7 @@ const DATA = /*__REPORT_DATA__*/null;
       const first = ep.drops[0];
       state.focus = first ? "t" + first.target : (ep.tests.length ? "cal" : "map");
     }
-    renderFocusButtons(); renderTiles(); renderTargets(); renderHyp(); renderWind(); renderFit(); renderLog(); draw();
+    renderFocusButtons(); renderCompareButtons(); renderTiles(); renderTargets(); renderHyp(); renderWind(); renderFit(); renderLog(); draw();
     const b = $("ep-banner");
     const msgs = [];
     if (ep.error) msgs.push("The agent stopped on an error: " + ep.error);
@@ -449,6 +569,31 @@ const DATA = /*__REPORT_DATA__*/null;
     });
   }
   renderViewButtons();
+
+  function renderCompareButtons() {
+    const seg = $("seg-compare");
+    seg.replaceChildren();
+    const can = state.agent && state.agent.group !== "reference" && refEpisode(state.ep.seed);
+    [["Side by side", true], ["Agent only", false]].forEach(([label, on]) => {
+      const b = el("button", { type: "button", "aria-pressed": String(Boolean(can) && state.compare === on || (!can && !on)), text: label });
+      if (!can) b.disabled = true;
+      b.addEventListener("click", () => { state.compare = on; renderCompareButtons(); draw(); });
+      seg.appendChild(b);
+    });
+    $("bench").classList.toggle("duo", Boolean(can) && state.compare);
+  }
+  function renderCaptions() {
+    const ep = state.ep, focusId = state.focus.startsWith("t") ? Number(state.focus.slice(1)) : null;
+    const line = (e) => {
+      if (!e) return "";
+      const t = focusId && e.scored.find((x) => x.id === focusId);
+      const miss = t ? (t.treated ? `hotspot ${focusId}: miss ${f1(t.distance)} m · ` : `hotspot ${focusId}: no drop · `) : "";
+      return `${miss}mission score ${f2(e.score)}`;
+    };
+    $("agent-caption-name").textContent = state.agent ? state.agent.label : "";
+    $("agent-caption").textContent = line(ep);
+    $("ref-caption").textContent = line(refEpisode(ep.seed));
+  }
 
   function renderTiles() {
     const ep = state.ep, c = ep.counts, box = $("tiles");
@@ -618,33 +763,42 @@ const DATA = /*__REPORT_DATA__*/null;
   }
 
   // ------------------------------------------------------------------- scene
-  const cv = $("scene"), ctx = cv.getContext("2d");
-  function focusBox() {
-    const ep = state.ep;
+  const cv = $("scene"), cvRef = $("scene-ref");
+  function focusBox(eps) {
+    const ep = eps[0];
     if (state.focus === "cal") return { cx: 0, cy: 0, r: 560, step: 250 };
     if (state.focus === "map") {
       const far = Math.max(600, ...ep.targets.map((t) => Math.hypot(t.x, t.y)));
       return { cx: 0, cy: 0, r: far + 200, step: 500 };
     }
-    const tg = ep.targets.find((t) => "t" + t.id === state.focus), d = ep.drops.find((x) => x.target === tg.id);
+    const tg = ep.targets.find((t) => "t" + t.id === state.focus);
+    const paths = eps.map((e) => e.drops.find((x) => x.target === tg.id)).filter(Boolean).map((d) => d.path);
     let r = tg.smoke_radius + 30, cx = tg.x, cy = tg.y;
-    if (d) {
-      const xs = d.path.map((p) => p[0]).concat([tg.x - tg.smoke_radius, tg.x + tg.smoke_radius]), ys = d.path.map((p) => p[1]).concat([tg.y - tg.smoke_radius, tg.y + tg.smoke_radius]);
+    if (paths.length) {
+      const pts = paths.flat();
+      const xs = pts.map((p) => p[0]).concat([tg.x - tg.smoke_radius, tg.x + tg.smoke_radius]), ys = pts.map((p) => p[1]).concat([tg.y - tg.smoke_radius, tg.y + tg.smoke_radius]);
       cx = (Math.min(...xs) + Math.max(...xs)) / 2; cy = (Math.min(...ys) + Math.max(...ys)) / 2;
       r = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 + 45;
     }
     return { cx, cy, r, step: r > 220 ? 100 : 50 };
   }
   function draw() {
-    const ep = state.ep;
-    if (!ep) return;
+    if (!state.ep) return;
+    const duo = $("bench").classList.contains("duo"), ref = duo ? refEpisode(state.ep.seed) : null;
+    const f = focusBox(ref ? [state.ep, ref] : [state.ep]);
+    drawOn(cv, state.ep, f);
+    if (ref) drawOn(cvRef, ref, f);
+    renderCaptions();
+  }
+  function drawOn(cv, ep, f) {
+    const ctx = cv.getContext("2d");
     const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
     if (!w || !h) return;
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const C = {}; ["ink", "ink-2", "muted", "grid", "axis", "surface", "s1", "s2", "good", "crit", "smoke", "test", "bg"].forEach((k) => { C[k] = css("--" + k); });
-    const f = focusBox(), s = Math.min(w, h) / (2 * f.r) * state.zoom;
+    const s = Math.min(w, h) / (2 * f.r) * state.zoom;
     const yaw = state.yaw * Math.PI / 180, e = state.elev * Math.PI / 180, cy = Math.cos(yaw), sy = Math.sin(yaw), se = Math.sin(e), ce = Math.cos(e);
     const zc = 55 * ce;
     const P = (x, y, z) => { const dx = x - f.cx, dy = y - f.cy; return [w / 2 + (dx * cy - dy * sy) * s, h / 2 - ((dx * sy + dy * cy) * se + z * ce - zc) * s]; };
@@ -721,20 +875,22 @@ const DATA = /*__REPORT_DATA__*/null;
     }
   }
   let drag = null;
-  cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, yaw: state.yaw, elev: state.elev }; cv.setPointerCapture(e.pointerId); });
-  cv.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    state.yaw = drag.yaw + (e.clientX - drag.x) * 0.5;
-    state.elev = Math.max(2, Math.min(90, drag.elev + (e.clientY - drag.y) * 0.4));
-    renderViewButtons(); draw();
-  });
-  ["pointerup", "pointercancel"].forEach((t) => cv.addEventListener(t, () => { drag = null; }));
-  cv.addEventListener("keydown", (e) => {
-    const k = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, 6], ArrowDown: [0, -6] }[e.key];
-    if (!k) return;
-    e.preventDefault();
-    state.yaw += k[0]; state.elev = Math.max(2, Math.min(90, state.elev + k[1]));
-    renderViewButtons(); draw();
+  [cv, cvRef].forEach((c) => {     // one camera for both views: rotating one rotates the other
+    c.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, yaw: state.yaw, elev: state.elev }; c.setPointerCapture(e.pointerId); });
+    c.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      state.yaw = drag.yaw + (e.clientX - drag.x) * 0.5;
+      state.elev = Math.max(2, Math.min(90, drag.elev + (e.clientY - drag.y) * 0.4));
+      renderViewButtons(); draw();
+    });
+    ["pointerup", "pointercancel"].forEach((t) => c.addEventListener(t, () => { drag = null; }));
+    c.addEventListener("keydown", (e) => {
+      const k = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, 6], ArrowDown: [0, -6] }[e.key];
+      if (!k) return;
+      e.preventDefault();
+      state.yaw += k[0]; state.elev = Math.max(2, Math.min(90, state.elev + k[1]));
+      renderViewButtons(); draw();
+    });
   });
   window.addEventListener("resize", draw);
   const redrawAll = () => { if (state.ep) { renderWind(); renderFit(); draw(); } };

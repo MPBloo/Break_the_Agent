@@ -22,62 +22,43 @@ It needs only Python 3.10+. `pip install -r requirements.txt` adds the MCP serve
 
 ## Results
 
-Ten seeds, default configuration (6 m scoring radius). Scripted agents are deterministic: same
-seed, same score.
+The headline table is `results/presented.md`, rebuilt by `python run_eval.py`. Each model is
+compared with the reference on the worlds (seeds) it played. Default configuration: 6 m scoring
+radius. Scripted agents are deterministic: same seed, same score.
 
-| Agent | What it is | Mean | Min | Max |
-|---|---|---|---|---|
-| **Reference solution** | same tools, same budgets, better method | **0.82** | 0.71 | 0.91 |
-| Claude Sonnet 5.5, previous wording | 9 missions on seeds 1 to 3 | 0.708 | 0.618 | 0.859 |
-| Claude Sonnet 5.5, Canadair wording | 9 missions on seeds 1 to 3 | 0.730 | 0.616 | 0.842 |
-| Claude Sonnet 4.5, Canadair prompt | 9 missions on seeds 1 to 3 | 0.315 | 0.000 | 0.604 |
-| Claude Haiku 5.5, completed missions | 3 of 9 missions on seeds 1 to 3 (see below) | 0.81 | 0.64 | 0.94 |
-| Stops fitting early | reference experiments, one coarse fitting pass | 0.60 | 0.00 | 0.89 |
-| One flight condition | ten tests at the same heading, altitude, speed | 0.39 | 0.06 | 0.76 |
-| Assumes uniform wind | varied tests at one altitude, no shear, no veer | 0.37 | 0.04 | 0.67 |
-| Ignores the smoke column | careful clear-air tests, updraft left at zero | 0.21 | 0.00 | 0.41 |
-| Trusts priors | one test drop, mid-range guesses, no fitting | 0.04 | 0.00 | 0.22 |
-| Stop early | plays like the reference, stops after 2 of 5 targets | 0.03 | 0.00 | 0.07 |
-| Calibrate, never drop | | 0.00 | 0.00 | 0.00 |
-| Release overhead (no model) | | 0.00 | 0.00 | 0.00 |
-| Random actions | | 0.00 | 0.00 | 0.00 |
-| Do nothing | | 0.00 | 0.00 | 0.00 |
+| Agent | Missions | Mean | Range | Reference, same seeds | Below the reference | Refused by safety filter |
+|---|---|---|---|---|---|---|
+| **Reference solution** | 10 seeds | **0.86** | 0.72 to 0.94 | | | |
+| Claude Opus 5.5 | 9 (seeds 1 to 3) | 0.85 | 0.74 to 0.94 | 0.90 | 7 of 9 | 0 of 9 |
+| Claude Sonnet 5.5 | 9 | 0.73 | 0.62 to 0.84 | 0.90 | 9 of 9 | 0 of 9 |
+| Claude Sonnet 4.5 | 9 | 0.31 | 0.00 to 0.60 | 0.90 | 9 of 9 | 0 of 9 |
+| Claude Haiku 5.5 | 9 | not measurable | | | | 9 of 9 |
+| Stops fitting early (heuristic) | 10 seeds | 0.60 | 0.00 to 0.89 | | | |
+| One flight condition (heuristic) | 10 seeds | 0.74 | 0.63 to 0.90 | | | |
+| Assumes uniform wind (heuristic) | 10 seeds | 0.39 | 0.13 to 0.60 | | | |
+| Ignores the smoke column (heuristic) | 10 seeds | 0.19 | 0.00 to 0.40 | | | |
+| Trusts priors (heuristic) | 10 seeds | 0.04 | 0.00 to 0.22 | | | |
+| Stop early (baseline) | 10 seeds | 0.04 | 0.00 to 0.08 | | | |
+| Do nothing, calibrate only, release overhead, random actions (baselines) | 10 seeds each | 0.00 | | | | |
 
-On 60 seeds the reference averages 0.825, with a minimum of 0.67.
+On 60 seeds the reference averages 0.846, with a minimum of 0.71.
 
-**Earlier frontier-model runs.** These results used the previous mission wording and should be
-rerun before drawing conclusions about the Canadair framing. On the three seeds the models played,
-the reference scores 0.88 (0.91, 0.88, 0.84).
+**What the models show.**
 
-- Claude Sonnet 5.5 scores 0.71 and is below the reference in 8 of 9 missions (one mission at
-  0.86 against 0.84). Its losses come from fitting (0.16) and from the choice of experiments
-  (0.09); it uses 24 to 36 of the 120 calculations.
-- Claude Haiku 5.5 is not a usable comparison yet. Six of its nine missions were ended by the
-  model provider's safety filter before any real drop, and score 0. The three it completed score
-  0.64, 0.94 and 0.85, two of them above the reference on that seed.
-- Under the previous mission wording, Claude Sonnet 4.5 refused its first request every time.
+- Claude Sonnet 5.5 and Sonnet 4.5 are below the reference in every mission. Sonnet 5.5 loses
+  mostly while fitting (0.16 of its gap); Sonnet 4.5 loses while fitting (0.38) and on the choice
+  of experiments (0.11).
+- Claude Opus 5.5 comes close: 0.85 against 0.90, below the reference in 7 of 9 missions. Its
+  first run made it clear that our reference fitted worse than Opus. The reference now ends its
+  fit with a least-squares step on every measurement, the aircraft's wind readings included
+  (0.825 to 0.846 on 60 seeds). The gap to Opus is real but narrow.
+- Claude Haiku 5.5 cannot be measured: the provider's safety filter stops every mission early
+  with the current wording. The wording describes the firefighting task directly and was not tuned
+  to get past the filter. Under an earlier wording it completed 3 of 9 missions (0.64 to 0.94).
 
-**Canadair-framing retest.** Haiku 5.5 was run twice for nine missions each on seeds 1 to 3,
-with high effort and the updated wildfire-suppression briefing. All 18 runs were stopped by the
-provider's safety filter before any water drop, so they do not measure the model's ability to
-play. The wording describes the firefighting task directly and was not tuned to evade the filter.
-The earlier three completed Haiku missions remain historical results under the previous wording.
-Results recorded earlier with a 10 m radius are in `results/archive/radius-10m/`.
-
-Sonnet 5.5 completed all nine Canadair-briefing runs at high effort without refusals. It averaged 0.730
-(0.616 to 0.842), below the reference's 0.879 on the same seeds in all nine runs. Attribution
-points mainly to fitting (0.142); experiment choice accounts for 0.037, while aiming is -0.031.
-The negative aiming figure means its final aim was slightly better than the reference's
-counterfactual aim using Sonnet's fitted hypothesis. This does not support making aiming the
-primary difficulty lever.
-
-Claude Sonnet 4.5 completed all nine runs with the Canadair briefing and scored 0.315 on average
-(0.000 to 0.604), below the reference's 0.879 on those same seeds in all nine runs. Its previous
-first-request refusals did not recur. The reason for the difference is not exposed by the API logs.
-
-The repeated gap is now supported by both Sonnet models under the current wording, though the
-sample covers only three seeds. Haiku could not complete the Canadair-briefing runs, while its
-three earlier completed missions show it can match the reference.
+Earlier runs (previous wording, 10 m radius, the first Haiku retest) are kept in `results/llm/`
+and `results/archive/`, listed in `results/summary.md` and under "Earlier runs" in the viewer.
+`results/presented.json` decides which runs make the headline table.
 
 **What is and is not established.** The reference, the baselines, the reward and its exploit
 tests are measured and reproducible with the command above. The five heuristics are *not* LLM
