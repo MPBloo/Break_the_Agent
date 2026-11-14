@@ -26,6 +26,7 @@ Ten seeds, default configuration. Scripted agents are deterministic: same seed, 
 | Agent | What it is | Mean | Min | Max |
 |---|---|---|---|---|
 | **Reference solution** | same tools, same budgets, better method | **0.89** | 0.83 | 0.95 |
+| Claude Sonnet 5.5 | frontier model, tool loop, no shell; 9 missions on seeds 1 to 3 | 0.80 | 0.45 | 0.92 |
 | Stops fitting early | reference experiments, one coarse fitting pass | 0.68 | 0.00 | 0.93 |
 | Assumes uniform wind | varied tests at one altitude, no shear, no veer | 0.56 | 0.17 | 0.80 |
 | One flight condition | ten tests at the same heading, altitude, speed | 0.55 | 0.19 | 0.85 |
@@ -39,11 +40,18 @@ Ten seeds, default configuration. Scripted agents are deterministic: same seed, 
 
 On 60 seeds the reference averages 0.895 and never falls below 0.80.
 
+On the three seeds Sonnet played, the reference scores 0.93 (0.95, 0.93, 0.91), so the mean gap
+is 0.13. It is not a clean sweep: Sonnet is below the reference in 7 of 9 missions and slightly
+above it in two (0.92 and 0.91 against 0.905 on seed 3). What separates them is consistency. The
+reference never drops below 0.83; Sonnet ranges from 0.45 to 0.92 on the same worlds. Its worst
+mission had a near-perfect hypothesis and lost 0.43 while aiming inside smoke columns.
+
 **What is and is not established.** The reference, the baselines, the reward and its exploit
 tests are measured and reproducible with the command above. The five heuristics are *not* LLM
 runs: each is the reference with one decision degraded, which measures what that decision is
-worth. **No frontier model has been run yet in this repository** (no API key was available
-where it was built). The harness for it is ready and tested against a mock endpoint:
+worth. One frontier model has been run, on three seeds with three runs each; its transcripts are
+in `results/llm/` and `run_eval.py` replays them to check their scores. Nine missions are a small
+sample, and no other model has been tried. To run a model:
 
 ```bash
 cp .env.example .env      # put your key and model in .env (ignored by git)

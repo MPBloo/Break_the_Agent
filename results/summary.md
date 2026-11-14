@@ -5,7 +5,7 @@ Seeds 1..10. Scores are mission scores in [0, 1]. Scripted agents are determinis
 | Agent | Kind | Episodes | Mean | Std | Min | Max | Lost: experiments | Lost: fitting | Lost: aiming |
 |---|---|---|---|---|---|---|---|---|---|
 | Reference solution | reference | 10 | 0.894 | 0.034 | 0.829 | 0.949 |  |  |  |
-| claude-sonnet-5-5 | frontier | 1 | 0.846 | 0.000 | 0.846 | 0.846 | 0.11 | 0.02 | -0.03 |
+| claude-sonnet-5-5 | frontier | 9 | 0.797 | 0.144 | 0.449 | 0.920 | 0.05 | 0.02 | 0.06 |
 | Stops fitting early | heuristic | 10 | 0.679 | 0.342 | 0.000 | 0.932 | -0.00 | 0.22 | -0.00 |
 | One flight condition | heuristic | 10 | 0.550 | 0.226 | 0.186 | 0.854 | 0.35 | -0.00 | -0.00 |
 | Assumes uniform wind | heuristic | 10 | 0.563 | 0.174 | 0.169 | 0.801 | 0.27 | 0.06 | 0.00 |

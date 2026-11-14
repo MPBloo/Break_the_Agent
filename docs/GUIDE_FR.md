@@ -10,7 +10,7 @@
 | Baselines « ne rien faire » et « arrêt précoce » | 0,00 et 0,06 |
 | Tests (23 tests, dont les tentatives de triche) | Tous passent |
 | Interface de résultats | `results/report.html` |
-| Boucle pour un modèle frontier (Gemini, etc.) | Écrite, testée seulement contre un faux serveur |
+| Run d'un modèle frontier | Claude Sonnet 5.5, 9 parties : 0,80 contre 0,93 pour la référence sur les mêmes seeds |
 | Emballage Harbor | Généré, jamais lancé sous Docker |
 | Entraînement d'un petit modèle | Seulement l'export des données |
 

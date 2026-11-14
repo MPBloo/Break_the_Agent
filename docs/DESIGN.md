@@ -123,8 +123,11 @@ If it scores near zero, loosen the same two.
 
 ## 7. What is not done
 
-- No frontier model has been run. The gap to a real agent is therefore unknown. The scripted
-  heuristics bound what specific mistakes cost; they do not predict which mistakes a model makes.
+- One frontier model has been run (Claude Sonnet 5.5, nine missions on seeds 1 to 3): 0.80
+  against 0.93 for the reference on the same seeds, below it in 7 of 9 missions. The sample is
+  small and the gap is modest at the default 10 m scoring radius. Re-scoring the same drops with a
+  5 m radius gives 0.64 against 0.86, at the price of a lower and less stable reference (0.79 on
+  ten seeds, minimum 0.66).
 - No small model has been trained. `export_dataset.py` writes reference missions as
   tool-calling transcripts; training and before/after evaluation remain to be done.
 - The Harbor packaging has not been run under Docker.

@@ -147,22 +147,62 @@
    "id": "claude-sonnet-5-5",
    "label": "claude-sonnet-5-5",
    "group": "frontier",
-   "n": 1,
-   "mean": 0.8458,
-   "std": 0.0,
-   "min": 0.8458,
-   "max": 0.8458,
+   "n": 9,
+   "mean": 0.7973,
+   "std": 0.1441,
+   "min": 0.4485,
+   "max": 0.9197,
    "scores": [
     {
      "seed": 1,
      "run": 1,
      "score": 0.8458
+    },
+    {
+     "seed": 1,
+     "run": 2,
+     "score": 0.4485
+    },
+    {
+     "seed": 1,
+     "run": 3,
+     "score": 0.9039
+    },
+    {
+     "seed": 2,
+     "run": 1,
+     "score": 0.8772
+    },
+    {
+     "seed": 2,
+     "run": 2,
+     "score": 0.6756
+    },
+    {
+     "seed": 2,
+     "run": 3,
+     "score": 0.8306
+    },
+    {
+     "seed": 3,
+     "run": 1,
+     "score": 0.7627
+    },
+    {
+     "seed": 3,
+     "run": 2,
+     "score": 0.9197
+    },
+    {
+     "seed": 3,
+     "run": 3,
+     "score": 0.9114
     }
    ],
    "lost": {
-    "lost_experiments": 0.1123,
-    "lost_fitting": 0.0178,
-    "lost_aiming": -0.0269
+    "lost_experiments": 0.0477,
+    "lost_fitting": 0.0175,
+    "lost_aiming": 0.0647
    }
   },
   {
