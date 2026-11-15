@@ -100,3 +100,28 @@ Charcoal, bone, one accent in water blue. Slow eases, one moving element at a ti
 | 27.9 to 29.8 | 2:22.9 | A water drop appears, a 3D ground grid draws in, the drop lands: impact rings | drop, soft splash |
 | 30.3 to 32.6 | 2:25.3 | The camera pulls back: the grid becomes the 3D panel of a dashboard ("Canadair Firefighting") | airy whoosh |
 | 33.0 to 35.0 | 2:28.0 | Only the blue impact point remains on charcoal, breathing: cross-dissolve into the screen recording (scene 5) | silence under the last sentence |
+
+## Scenes 5 to 10 · the real site, filmed (2:30 to 10:00)
+
+`video/screen.js` films the real `results/report.html` in Chromium (dark theme, 1920x1080, captured at 2x so
+text stays sharp in close-ups). A virtual camera pans and zooms over the page; the agent, episode and hotspot
+are chosen through the site's own controls at fixed times, and highlights follow the camera. The timeline of
+each scene is in `video/screen_scenes.js`; scene 10 is a page of its own (`video/s10_terminal.html`) that
+replays the real output of `python run_eval.py` with the time at which each line was printed.
+
+```bash
+node video/screen.js s5                     # -> video/out/s5_environment.mp4 (s5 to s9)
+node video/screen.js s7 --stills 30,45      # PNG stills in video/out/stills_s7/
+node video/render.js video/s10_terminal.html video/out/s10_one_command.mp4
+```
+
+| Scene | Film | Length | What is on screen |
+|---|---|---|---|
+| 5 · The real environment | 2:30 | 60 s | Top of the site; "How a mission works"; the presentation-mode button is clicked; the briefing: known physics (24.5 s), the six unknowns (32 s), the seven MCP tools card (39.5 s), "Neither tool knows the real air" (45 s), the imposed flight paths of the fires (54 s) |
+| 6 · The reward and the reference | 3:30 | 60 s | The scoring lines of the briefing; the score chart with the reference and its method card (17 s); each degraded heuristic highlighted in turn, 0.60 down to 0.04 (40 s) |
+| 7 · Results | 4:30 | 80 s | Hero numbers; Sonnet 4.5, Sonnet 5.5, Opus 5.5 rows; Sonnet 5.5 seed 2 run 1 chosen through the menus (29 s), hotspot 3 (33 s); side-by-side 3D view turning slowly: reference 0.4 m, Sonnet 3.4 m; hotspot table; back to Opus vs reference (72 s) |
+| 8 · Why agents fail | 5:50 | 110 s | "Where the points were lost"; Sonnet 4.5 seed 1 run 2: its last compare (35.6 m off) then its five drops, drag and wind direction errors (24 to 56 s); Sonnet 5.5: 28 of 120 calculations, fit error, shear (57 to 81 s); Opus 5.5 seed 3 run 2: shear, the misses (82 s); shear again under the closing finding (100 s) |
+| 9 · Trying to cheat | 7:40 | 80 s | Baselines on the chart; the README's reward-integrity table row by row (28 s), the seed exploit and its fix (58 s), transcripts replayed call by call (73 s) |
+| 10 · One command | 9:00 | 60 s | A terminal: `python run_eval.py` runs for 45 s (MCP parity and the 72 replayed transcripts highlighted), then the camera moves in on the results table; fade out at 59 s |
+
+Cross-fades of 0.7 s hide the moments where the page layout changes (presentation mode, a new episode, the README).

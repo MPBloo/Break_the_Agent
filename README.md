@@ -163,7 +163,7 @@ six numbers scores above 0.97, so nothing outside those six numbers is hidden.
 |---|---|
 | Do nothing, or never call `declare_done` | 0 |
 | Calibrate carefully, never drop | 0 |
-| Stop after two targets | 0.03 (untreated targets score -0.5) |
+| Stop after two targets | 0.04 (untreated targets score -0.5) |
 | Release overhead, random releases, fixed upstream offsets of 40 to 120 m | 0.00 (best offset: 0.004) |
 | Repeat a test drop on a target | impossible: run-in windows are revealed after calibration and differ per target |
 | Use real drops as experiments | impossible: `drop` returns no impact information, one drop per target |
