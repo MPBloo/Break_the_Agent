@@ -221,7 +221,8 @@ function runtime() {
     while (ei < events.length && events[ei].t <= t) {
       const e = events[ei++];
       if (e.fade) {
-        await page.evaluate(([S2, tt]) => window.__dir.frame(S2, tt), [S, t]);
+        // the snapshot to fade from is the previous frame, before the new camera framing applies
+        await page.evaluate(([S2, tt]) => window.__dir.frame(S2, tt), [S, Math.max(0, t - 1 / fps)]);
         const shot = await page.screenshot({ type: 'jpeg', quality: 92 });
         await e.act(P);
         if (e.url) { await P.open('file://' + path.join(ROOT, e.url)); if (e.init) await e.init(P); }
