@@ -9,7 +9,7 @@ node video/render.js video/m1_break_the_agent.html video/out/stills --stills 1,5
 ```
 
 Needs Node, Playwright with Chromium, and ffmpeg. To join sections:
-`ffmpeg -i video/out/m1_break_the_agent.mp4 -i video/out/m2_fire_and_water.mp4 -i video/out/m3_the_problem.mp4 -filter_complex "[0:v][1:v][2:v]concat=n=3:v=1:a=0[v]" -map "[v]" video/out/m1_m3_0000-0155.mp4`. Rendered files go to `video/out/` (not committed).
+`ffmpeg -i video/out/m1_break_the_agent.mp4 -i video/out/m2_fire_and_water.mp4 -i video/out/m3_the_problem.mp4 -i video/out/m4_what_it_learns.mp4 -filter_complex "[0:v][1:v][2:v][3:v]concat=n=4:v=1:a=0[v]" -map "[v]" video/out/m1_m4_0000-0230.mp4`. Rendered files go to `video/out/` (not committed).
 Fonts: Anton, Inter and JetBrains Mono, under the SIL Open Font License (`video/fonts/`).
 
 ## M1 · Break the Agent (30 s) · cut on a 124 BPM grid (one beat = 0.484 s)
@@ -84,3 +84,19 @@ Same square grid as the end of M2. Palette: charcoal, bone, ember (fire, unknown
 | 37.0 to 37.7 | 1:52.0 | The scoring ring: 1 at the centre, 0 at 6 m; "SCORE: 1 AT THE CENTRE, 0 AT 6 M" | hit |
 | 38.2 | 1:53.2 | The hidden impact is revealed, 1.62 m off: 0.73; "computed by the environment, after the last drop" | soft chime |
 | 39.3 to 40.0 | 1:54.3 | Everything fades to the charcoal background: the start of M4 | |
+
+## M4 · What the agent must learn (35 s, film time 1:55 to 2:30) · calm editorial typography
+
+Charcoal, bone, one accent in water blue. Slow eases, one moving element at a time: the film breathes here.
+
+| M4 time (s) | Film | Picture | Sound cue |
+|---|---|---|---|
+| 0.8 / 3.8 / 6.8 | 1:55.8 | "EXPERIMENT", "MODEL", "COMMIT" rise one after another; a thin line draws under each, with a blue tip | one low note per word |
+| 10.4 / 12.9 / 15.4 | 2:05.4 | The question under each word: "Which test tells me the most?", "Does my model fit everything I measured?", "Am I sure enough to act?" | |
+| 18.9 to 19.6 | 2:13.9 | The questions fade | |
+| 19.8 to 22.0 | 2:14.8 | The words move one by one into a stack on the left | |
+| 22.0 to 26.4 | 2:17.0 | A divider, "WHAT THIS TRAINS", then four tags light up: Exploring an unfamiliar system · Using tools · Managing limited resources · Planning ahead | soft tick per tag |
+| 27.0 to 28.0 | 2:22.0 | Everything fades | music drops |
+| 27.9 to 29.8 | 2:22.9 | A water drop appears, a 3D ground grid draws in, the drop lands: impact rings | drop, soft splash |
+| 30.3 to 32.6 | 2:25.3 | The camera pulls back: the grid becomes the 3D panel of a dashboard ("Canadair Firefighting") | airy whoosh |
+| 33.0 to 35.0 | 2:28.0 | Only the blue impact point remains on charcoal, breathing: cross-dissolve into the screen recording (scene 5) | silence under the last sentence |

@@ -1,0 +1,191 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>M4 · What the agent learns</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// M4 · WHAT THE AGENT MUST LEARN · 35 s, calm editorial typography.
+// 0-10 EXPERIMENT · MODEL · COMMIT, a line drawing under each · 10-19 the question behind each word ·
+// 20-27 the words move left, the four tracks of the challenge light up on the right ·
+// 27-35 one water drop lands on a 3D ground grid, the camera pulls back into a dashboard, then only the drop remains.
+window.DURATION = 35;
+const W = 1920, H = 1080;
+const C = { ch: '#0E0F12', bone: '#F2EEE6', water: '#3BA3FF', smoke: '#6B6F78' };
+const cv = document.getElementById('c'), x = cv.getContext('2d');
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+const eOut = (k) => 1 - Math.pow(1 - k, 3);
+function font(size, f = 'Inter', w = 400) { return `${w} ${size}px ${f}`; }
+function tw(s, size, f, w) { x.save(); x.font = font(size, f, w); const m = x.measureText(s).width; x.restore(); return m; }
+function text(s, px, py, size, o = {}) {
+  x.save(); x.font = font(size, o.font || 'Inter', o.weight || 400); x.fillStyle = o.color || C.bone;
+  x.globalAlpha *= o.alpha == null ? 1 : o.alpha; x.textAlign = o.align || 'left'; x.letterSpacing = (o.spacing || 0) + 'px';
+  x.fillText(s, px, py); x.restore();
+}
+function hline(x0, x1, y, color, alpha = 1, w = 1.5) { if (x1 <= x0) return; x.save(); x.globalAlpha *= alpha; x.strokeStyle = color; x.lineWidth = w; x.beginPath(); x.moveTo(x0, y); x.lineTo(x1, y); x.stroke(); x.restore(); }
+function dot(px, py, r, color, alpha = 1) { x.save(); x.globalAlpha *= alpha; x.fillStyle = color; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill(); x.restore(); }
+
+// ---------------------------------------------------------------- the three words
+const WORDS = [
+  { w: 'EXPERIMENT', at: 0.8, q: ['Which test tells me', 'the most?'], qa: 10.4 },
+  { w: 'MODEL', at: 3.8, q: ['Does my model fit', 'everything I measured?'], qa: 12.9 },
+  { w: 'COMMIT', at: 6.8, q: ['Am I sure enough', 'to act?'], qa: 15.4 },
+];
+const BIG = 120, SMALL = 84;
+function words(t, fadeAll) {
+  WORDS.forEach((o, i) => {
+    // position: three centred columns, then a stack on the left third (one word moving at a time)
+    const mv = ease(seg(t, 19.8 + i * 0.6, 20.6 + i * 0.6));
+    const size = lerp(BIG, SMALL, mv);
+    const wd = tw(o.w, size, 'Anton');
+    // centred row with equal gaps between the words
+    const ws = WORDS.map((q) => tw(q.w, BIG, 'Anton')), gap = 170, total = ws.reduce((a, b) => a + b, 0) + 2 * gap;
+    const rowX = 960 - total / 2 + ws.slice(0, i).reduce((a, b) => a + b, 0) + gap * i + ws[i] / 2;
+    const cx = lerp(rowX, 360 + wd / 2, mv);
+    const by = lerp(520, 420 + i * 150, mv);
+    // reveal: the word rises out of a mask
+    const r = eOut(seg(t, o.at, o.at + 0.9));
+    if (r <= 0) return;
+    x.save(); x.globalAlpha = fadeAll;
+    x.beginPath(); x.rect(cx - wd / 2 - 20, by - size * 1.05, wd + 40, size * 1.15); x.clip();
+    text(o.w, cx, by + (1 - r) * size * 0.9, size, { font: 'Anton', align: 'center', spacing: 2 });
+    x.restore();
+    // the line under the word, drawn left to right, with a water-blue tip
+    const lk = ease(seg(t, o.at + 0.7, o.at + 1.6));
+    const ly = by + lerp(28, 22, mv), x0 = cx - wd / 2, x1 = x0 + wd * lk;
+    hline(x0, x1, ly, C.bone, 0.7 * fadeAll);
+    if (lk > 0) dot(x1, ly, 4, C.water, fadeAll);
+    // the question under it
+    const qk = ease(seg(t, o.qa, o.qa + 0.9)) * (1 - seg(t, 18.9, 19.6));
+    if (qk > 0) o.q.forEach((s, j) => text(s, cx, ly + 58 + j * 40 + (1 - qk) * 12, 30, { align: 'center', color: C.bone, alpha: qk * 0.85 * fadeAll }));
+  });
+}
+
+// ---------------------------------------------------------------- the four tracks of the challenge
+const TAGS = ['Exploring an unfamiliar system', 'Using tools', 'Managing limited resources', 'Planning ahead'];
+function tags(t, fadeAll) {
+  const dk = ease(seg(t, 22.0, 22.7));
+  if (dk <= 0) return;
+  x.save(); x.globalAlpha = fadeAll;
+  x.strokeStyle = C.smoke; x.lineWidth = 1.5; x.beginPath(); x.moveTo(980, 330); x.lineTo(980, 330 + 440 * dk); x.stroke();
+  text('WHAT THIS TRAINS', 1080, 372, 20, { color: C.smoke, spacing: 5, alpha: seg(t, 22.4, 23.0) });
+  TAGS.forEach((s, i) => {
+    const on = ease(seg(t, 23.0 + i * 0.9, 23.7 + i * 0.9));
+    if (on <= 0) return;
+    const y = 410 + i * 92, w = tw(s, 30, 'Inter', 600) + 96, h = 66;
+    x.save(); x.globalAlpha *= on; x.translate((1 - on) * 16, 0);
+    x.beginPath(); x.roundRect(1080, y, w, h, h / 2);
+    x.fillStyle = 'rgba(59,163,255,0.10)'; x.fill(); x.strokeStyle = C.water; x.lineWidth = 1.5; x.stroke();
+    dot(1080 + 36, y + h / 2, 6, C.water);
+    text(s, 1080 + 62, y + h / 2 + 11, 30, { weight: 600 });
+    x.restore();
+  });
+  x.restore();
+}
+
+// ---------------------------------------------------------------- the drop, the ground grid, the dashboard
+function dropShape(px, py, s, alpha) {
+  x.save(); x.globalAlpha *= alpha; x.translate(px, py); x.scale(s, s); x.fillStyle = C.water;
+  x.beginPath(); x.moveTo(0, -30); x.bezierCurveTo(6, -18, 16, -6, 16, 6); x.arc(0, 6, 16, 0, Math.PI); x.bezierCurveTo(-16, -6, -6, -18, 0, -30); x.fill();
+  x.restore();
+}
+const IMP = { x: 960, y: 640 }, HZ = 380, HC = 520, Z0 = 2;
+function project(X, Z, yaw) {          // ground point, rotated around the impact point, seen in perspective
+  const dz = Z - Z0, c = Math.cos(yaw), s = Math.sin(yaw);
+  const Xr = X * c - dz * s, Zr = Z0 + X * s + dz * c;
+  if (Zr < 0.6) return null;
+  return [IMP.x + Xr * HC / Zr, HZ + HC / Zr * ((IMP.y - HZ) * Z0 / HC)];
+}
+function groundGrid(t, alpha) {
+  const yaw = 0.25 - 0.05 * (t - 28), reveal = ease(seg(t, 28.5, 29.9));
+  x.save(); x.strokeStyle = C.bone; x.lineWidth = 1.2;
+  const lineAt = (pts) => { x.beginPath(); let started = false; pts.forEach((p) => { if (!p) { started = false; return; } started ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]); started = true; }); x.stroke(); };
+  for (let X = -7; X <= 7.001; X += 0.5) {
+    const a = alpha * reveal * clamp(1 - Math.abs(X) / 7.5) * 0.35; if (a <= 0) continue;
+    x.globalAlpha = a; const pts = []; for (let Z = 0.7; Z <= 14; Z += 0.25) pts.push(project(X, Z, yaw)); lineAt(pts);
+  }
+  for (let Z = 1; Z <= 14.001; Z += 0.5) {
+    const a = alpha * reveal * clamp(1.4 / Z) * 0.4 * clamp(1 - Math.abs(Z - Z0) / (2 + 10 * reveal)); if (a <= 0) continue;
+    x.globalAlpha = a; const pts = []; for (let X = -7; X <= 7; X += 0.25) pts.push(project(X, Z, yaw)); lineAt(pts);
+  }
+  x.restore();
+}
+function skeleton(alpha) {           // an abstract dashboard around the 3D panel
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  text('Canadair Firefighting', 300, 170, 56, { font: 'Anton', spacing: 1, alpha: seg(alpha, 0, 0.4) * 2.5 > 1 ? 1 : seg(alpha, 0, 0.4) * 2.5 });
+  const bar = (bx, by, bw, bh, a = 0.10) => { x.save(); x.globalAlpha *= a; x.fillStyle = C.bone; x.beginPath(); x.roundRect(bx, by, bw, bh, 8); x.fill(); x.restore(); };
+  bar(300, 194, 380, 14, 0.12);
+  for (let i = 0; i < 4; i++) {
+    const k = seg(alpha, 0.1 + i * 0.12, 0.5 + i * 0.12); if (k <= 0) continue;
+    x.save(); x.globalAlpha *= k;
+    x.strokeStyle = 'rgba(242,238,230,0.16)'; x.lineWidth = 1.5; x.beginPath(); x.roundRect(300 + i * 336, 240, 312, 130, 14); x.stroke();
+    bar(326 + i * 336, 268, 120, 12, 0.14); bar(326 + i * 336, 300, 170, 40, i === 0 ? 0 : 0.18);
+    if (i === 0) { x.save(); x.globalAlpha *= 0.85; x.fillStyle = C.water; x.beginPath(); x.roundRect(326, 300, 170, 40, 8); x.fill(); x.restore(); }
+    x.restore();
+  }
+  const lk = seg(alpha, 0.5, 1);
+  if (lk > 0) {
+    x.save(); x.globalAlpha *= lk;
+    x.strokeStyle = 'rgba(242,238,230,0.16)'; x.lineWidth = 1.5; x.beginPath(); x.roundRect(300, 405, 412, 497, 14); x.stroke();
+    for (let r = 0; r < 7; r++) { bar(326, 440 + r * 64, 160 + ((r * 53) % 140), 12, 0.14); bar(326, 462 + r * 64, 300, 8, 0.07); }
+    x.restore();
+  }
+  x.restore();
+}
+
+// ---------------------------------------------------------------- timeline
+window.render = function (t) {
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1;
+  x.fillStyle = C.ch; x.fillRect(0, 0, W, H);
+
+  const fadeAll = 1 - ease(seg(t, 27.0, 28.0));
+  if (fadeAll > 0) { words(t, fadeAll); tags(t, fadeAll); }
+
+  if (t >= 27.3) {
+    // camera pull-back: the full-screen scene shrinks into a panel of the dashboard
+    const pb = ease(seg(t, 30.3, 32.0)), s = lerp(1, 0.46, pb);
+    const P = { x: lerp(IMP.x, 1180, pb), y: lerp(IMP.y, 700, pb) };
+    const rect = [P.x - IMP.x * s, P.y - IMP.y * s, W * s, H * s];
+    const out = 1 - ease(seg(t, 33.0, 33.6));            // everything but the drop fades for the cross-dissolve
+    skeleton(seg(t, 31.5, 32.6) * out);
+    x.save();
+    if (pb > 0) { x.beginPath(); x.roundRect(rect[0], rect[1], rect[2], rect[3], 14 * pb); x.clip(); }
+    x.translate(P.x, P.y); x.scale(s, s); x.translate(-IMP.x, -IMP.y);
+    groundGrid(t, out);
+    x.restore();
+    if (pb > 0) { x.save(); x.globalAlpha = pb * out; x.strokeStyle = 'rgba(242,238,230,0.16)'; x.lineWidth = 1.5; x.beginPath(); x.roundRect(rect[0], rect[1], rect[2], rect[3], 14); x.stroke(); x.restore(); }
+
+    // the drop: appears in the centre, falls onto the grid, becomes the impact point
+    const appear = eOut(seg(t, 27.9, 28.6));
+    const fall = seg(t, 28.9, 29.8), fallE = fall * fall;
+    const land = t >= 29.8;
+    const sx = P.x, sy = land ? P.y : lerp(520, IMP.y - 6, fallE);
+    if (!land) dropShape(sx, sy - 6, appear * (1 - 0.3 * fall), 1);
+    else {
+      const age = t - 29.8;
+      dot(P.x, P.y, lerp(9, 7, pb) , C.water);
+      for (let k = 0; k < 2; k++) {
+        const a2 = age - k * 0.25; if (a2 < 0 || a2 > 1.4) continue;
+        x.save(); x.globalAlpha = (1 - a2 / 1.4) * 0.8; x.strokeStyle = C.water; x.lineWidth = 2;
+        x.beginPath(); x.ellipse(P.x, P.y, (10 + a2 * 90) * s, (10 + a2 * 90) * s * 0.42, 0, 0, Math.PI * 2); x.stroke(); x.restore();
+      }
+      // a slow breathing ring on the final plain frame
+      const br = seg(t, 33.6, 34.0);
+      if (br > 0) { const ph = ((t - 33.6) / 1.4) % 1; x.save(); x.globalAlpha = br * (1 - ph) * 0.5; x.strokeStyle = C.water; x.lineWidth = 1.5; x.beginPath(); x.arc(P.x, P.y, 10 + ph * 26, 0, Math.PI * 2); x.stroke(); x.restore(); }
+    }
+  }
+};
+window.ready = Promise.all(['400 100px Anton', '400 20px Inter', '600 20px Inter', '400 20px JBM'].map((f) => document.fonts.load(f)));
+window.ready.then(() => window.render(0));
+</script>
+</body></html>
