@@ -1,4 +1,12 @@
-# Canadair Firefighting
+# Blind Drop · Break the Agent
+
+**Team Lowkey · Junction 2026 · AfterQuery challenge "Break the Agent"**
+
+- Results site (scores, 3D replay of every drop, every transcript): https://blind-drop-three.vercel.app
+- Reproduce everything: `python run_eval.py` (below); the judges' protocol in Harbor: `harbor/run_protocol.sh`
+- Design notes: [docs/DESIGN.md](docs/DESIGN.md) · Video sources: [video/](video/README.md)
+
+## Canadair Firefighting
 
 A reinforcement-learning environment about a skill agents are asked for all the time and rarely
 tested on: **learn an unknown system with a few costly experiments, then act once, without
