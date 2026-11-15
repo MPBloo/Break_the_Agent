@@ -6,6 +6,24 @@
 - Reproduce everything: `python run_eval.py` (below); the judges' protocol in Harbor: `harbor/run_protocol.sh`
 - Design notes: [docs/DESIGN.md](docs/DESIGN.md) · Video sources: [video/](video/README.md)
 
+## For reviewers: claims and where to check them
+
+| Criterion | Claim | Evidence |
+|---|---|---|
+| **Gap** | On the same worlds, the reference scores 0.90; Claude Opus 5.5 0.85 (below in 7 of 9 missions), Sonnet 5.5 0.73 (9 of 9), Sonnet 4.5 0.31 (9 of 9). In Harbor with OpenCode over MCP: reference 0.890, Sonnet 5.5 0.728 (below on 3 of 3 worlds). | `results/presented.md`; every mission's transcript in `results/llm/`, replayed call by call by `python run_eval.py`; "The judges' protocol in Harbor" below |
+| **Meaningful difficulty** | Nothing is hidden beyond six numbers whose ranges are in the briefing; aiming with the true values scores above 0.97. Each lost point is tied to a decision by counterfactual replays; the models' main error is how wind grows with altitude (median error 16% for Sonnet 5.5, 12% for Opus). | `tests/test_environment.py::test_simulate_is_the_real_physics`; `bomber/episode.py` (briefing); `bomber/analysis.py`; "Reading an agent's failure" in `docs/DESIGN.md` |
+| **Reward integrity** | Do nothing 0, stop early 0.04, shortcuts 0; a seed-recovery exploit we found ourselves is closed by a server-side secret; the score locks once read; no tool output leaks the hidden air. | `tests/test_exploits.py` (13 tests, including `test_secret_salt_defeats_seed_recovery` and `test_no_tool_output_contains_the_hidden_parameters`); "Reward integrity" below |
+| **Craft** | One command reproduces every result; the reference scores the same over MCP as in-process; the Harbor package runs end to end in Docker; 28 tests pass. | `python run_eval.py`; `python -m unittest discover -s tests`; `harbor/run_protocol.sh` |
+
+**Questions we expect, answered with the evidence:**
+
+- *Does the reference cheat?* No. `agents/reference.py` imports only `math`: no physics, no world, no seed. It plays through the same seven tools and budgets as the agent, scores identically over the real MCP server (step 2 of `run_eval.py`), and runs as Harbor's `oracle`.
+- *Is the gap to Opus real?* It is narrow and we say so: 0.85 against 0.90, below in 7 of 9 missions, with the same failure in its worst runs (how wind grows with altitude). Sonnet 5.5 and 4.5 are below in every mission.
+- *What if the agent has a shell?* Measured, not assumed: OpenCode with a shell lets Sonnet 5.5 re-implement the simulator from the briefing and match the reference (0.889 against 0.890). Our scores use the MCP-tools-only setting the challenge announced; "With a shell" below explains why more computation does not help either side, and what would restore the gap.
+- *Is information withheld, or is the wording a trick?* No. The briefing states the full equations and the range of each unknown, and both calculation tools evaluate any hypothesis exactly (`test_calculation_tools_ignore_the_real_air`).
+- *Why does Haiku 5.5 score 0?* The provider's safety filter stopped all 9 missions; we report it as not measurable rather than as a score, and did not reword the task to get past the filter.
+- *Nine missions per model is small.* It is the judges' protocol (3 runs) on 3 worlds. For Sonnet 5.5 the standard error of the mean (0.025) is six times smaller than its gap; the reference is deterministic and measured on 10 and 60 worlds (0.86, 0.846).
+
 ## Canadair Firefighting
 
 A reinforcement-learning environment about a skill agents are asked for all the time and rarely
