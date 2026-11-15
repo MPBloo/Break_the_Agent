@@ -1,0 +1,103 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pitch · results</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="p_common.js"></script>
+<script>
+// PITCH · RESULTS · 25 s. Voice: 0.4 "Our reference uses the same tools and budgets." · 3.8 "Claude Sonnet 5.5 scores 0.73,
+// below the reference in every mission." · 10.7 "Opus 5.5 comes close, at 0.85 against 0.90." · 17.0 "On the same fire,
+// the reference lands 0.4 metres from the centre, Sonnet 3.4 metres away."
+window.DURATION = 25;
+// mean over the 9 missions of each model; the reference on the same worlds
+const BARS = [
+  { name: 'Reference', sub: 'same tools, same budgets', v: 0.90, color: C.water, t0: 0.7 },
+  { name: 'Claude Opus 5.5', sub: '', v: 0.85, color: C.ember, t0: 10.8, badge: 'below the reference in 7 of 9 missions', bt: 13.2 },
+  { name: 'Claude Sonnet 5.5', sub: '', v: 0.73, color: C.ember, t0: 3.9, badge: 'below the reference in 9 of 9 missions', bt: 6.3 },
+  { name: 'Claude Sonnet 4.5', sub: '', v: 0.31, color: C.ember, t0: 14.6, badge: 'below in 9 of 9', bt: 15.4, faint: true },
+];
+const BX = 640, BW = 1050, BY = 360, BS = 150, BH = 56;
+
+function bars(t, alpha) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  text('MISSION SCORE · 9 MISSIONS PER MODEL · SAME WORLDS AS THE REFERENCE', W / 2, 236, 20, { align: 'center', color: C.smoke, spacing: 4, alpha: seg(t, 0.4, 1.0) });
+  for (let v = 0; v <= 1.0001; v += 0.25) {           // axis
+    const gx = BX + v * BW;
+    line(gx, BY - 40, gx, BY + BS * 3 + BH + 70, C.dim, 1.5, null, seg(t, 0.4, 1.0));
+    text(v.toFixed(2), gx, BY + BS * 3 + BH + 110, 18, { font: 'JBM', align: 'center', color: C.smoke, alpha: seg(t, 0.4, 1.0) });
+  }
+  BARS.forEach((b, i) => {
+    const y = BY + i * BS, k = eOut(seg(t, b.t0, b.t0 + 1.4));
+    if (k <= 0) return;
+    const fa = b.faint ? 0.55 : 1;
+    text(b.name, BX - 36, y + 38, 34, { weight: 600, align: 'right', alpha: k * fa });
+    if (b.sub) text(b.sub, BX - 36, y + 72, 20, { align: 'right', color: C.smoke, alpha: k });
+    rect(BX, y, BW * b.v * k, BH, 8, b.color, fa);
+    text((b.v * k).toFixed(2), BX + BW * b.v * k - 16, y + 40, 30, { font: 'JBM', weight: 700, align: 'right', color: C.ch, alpha: k });
+    if (b.badge) {
+      const bk = eOut(seg(t, b.bt, b.bt + 0.6));
+      text(b.badge, BX + 4, y + BH + 36, 22, { color: b.faint ? C.smoke : C.bone, alpha: bk * fa });
+    }
+  });
+  // the reference line carried down over the other bars
+  const rk = seg(t, 4.6, 5.4);
+  if (rk > 0) line(BX + BW * 0.90, BY - 10, BX + BW * 0.90, BY + BS * 3 + BH + 10, C.water, 2, [6, 8], rk * 0.9);
+  // the narrow gap to Opus
+  const gk = eOut(seg(t, 13.8, 14.4));
+  if (gk > 0) {
+    const y = BY + BS - 22, x0 = BX + BW * 0.85, x1 = BX + BW * 0.90;
+    line(x0, y, x1, y, C.bone, 2, null, gk); line(x0, y - 10, x0, y + 10, C.bone, 2, null, gk); line(x1, y - 10, x1, y + 10, C.bone, 2, null, gk);
+    text('gap 0.05', x1 + 16, y + 8, 22, { font: 'JBM', weight: 700, alpha: gk });
+  }
+  x.restore();
+}
+
+// the same fire, side by side: a 6 m scoring circle, the water falls, the miss is measured
+const PXM = 36.7;   // pixels per metre: the 6 m circle has a 220 px radius
+function target(cx, cy, t, t0, miss, ang, color, label, score) {
+  const a = ease(seg(t, 16.9, 17.6));
+  x.save(); x.globalAlpha = a;
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, 220);
+  g.addColorStop(0, 'rgba(255,90,31,0.55)'); g.addColorStop(1, 'rgba(255,90,31,0.03)');
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, 220, 0, Math.PI * 2); x.fill();
+  ring(cx, cy, 220, C.bone, 2, 0.9);
+  for (let m = 1; m < 6; m++) ring(cx, cy, m * PXM, C.bone, 1, 0.12);
+  dot(cx, cy, 6, C.bone);
+  text('6 m', cx + 228, cy + 8, 20, { font: 'JBM', color: C.smoke });
+  text(label, cx, cy - 262, 36, { weight: 600, align: 'center' });
+  // the falling load
+  const ix = cx + Math.cos(ang) * miss * PXM, iy = cy + Math.sin(ang) * miss * PXM;
+  const f = seg(t, t0 - 1.0, t0);
+  if (f > 0 && f < 1) { const ff = f * f; dot(lerp(ix - 160, ix, f), lerp(cy - 420, iy, ff), 9, C.water); }
+  if (t >= t0) {
+    const age = t - t0;
+    dot(ix, iy, 9, C.water);
+    if (age < 0.8) ring(ix, iy, 10 + age * 80, C.water, 2, 1 - age / 0.8);
+    const k = eOut(seg(t, t0 + 0.2, t0 + 0.8));
+    line(cx, cy, ix, iy, color, 3, null, k);
+    text(miss.toFixed(1) + ' m', cx, cy + 300, 64, { font: 'Anton', align: 'center', color, alpha: k, spacing: 1 });
+    text('from the centre · hotspot score ' + score, cx, cy + 340, 22, { align: 'center', color: C.smoke, alpha: k });
+  }
+  x.restore();
+}
+
+window.render = function (t) {
+  bg();
+  header('SAME TOOLS. SAME BUDGETS.', t, 0.3, 140, 64, 1 - seg(t, 16.4, 16.9));
+  bars(t, 1 - ease(seg(t, 16.2, 16.9)));
+  if (t > 16.8) {
+    header('THE SAME FIRE', t, 16.9, 140, 64);
+    target(560, 560, t, 19.6, 0.4, -0.7, C.water, 'Reference', '0.93');
+    target(1360, 560, t, 22.0, 3.4, 0.5, C.ember, 'Claude Sonnet 5.5', '0.43');
+  }
+};
+window.ready.then(() => window.render(0));
+</script>
+</body></html>

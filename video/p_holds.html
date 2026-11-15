@@ -1,0 +1,95 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pitch · the reward holds</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="p_common.js"></script>
+<script>
+// PITCH · THE REWARD HOLDS · 16 s. Voice: 0.3 "The reward holds." · 1.9 "Doing nothing scores zero," · 3.8 "stopping early 0.04,"
+// · 5.6 "and we found and closed a real exploit ourselves." · 10.6 "One command reproduces everything," · 12.9 "and the
+// judges' protocol runs in Harbor."
+window.DURATION = 16;
+const ROWS = [
+  { t0: 1.9, k: 'Do nothing', v: '0.00' },
+  { t0: 3.8, k: 'Stop after 2 of the 5 fires', v: '0.04' },
+];
+function holds(t, alpha) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  header('THE REWARD HOLDS', t, 0.3, 160, 72);
+  ROWS.forEach((r, i) => {
+    const a = eOut(seg(t, r.t0, r.t0 + 0.6)), y = 330 + i * 150;
+    if (a <= 0) return;
+    x.save(); x.globalAlpha *= a; x.translate((1 - a) * 30, 0);
+    rect(360, y, 1200, 110, 18, C.panel, 1, '#3b3f47');
+    text(r.k, 410, y + 70, 40, { weight: 600 });
+    text(r.v, 1510, y + 74, 56, { font: 'JBM', weight: 700, align: 'right', color: C.ember });
+    x.restore();
+  });
+  // the exploit we found, then closed
+  const a = eOut(seg(t, 5.6, 6.2)), y = 630;
+  if (a > 0) {
+    const closed = ease(seg(t, 7.8, 8.4));
+    x.save(); x.globalAlpha *= a; x.translate((1 - a) * 30, 0);
+    rect(360, y, 1200, 190, 18, C.panel, 1, closed > 0.5 ? C.water : C.ember);
+    text('A real exploit, found by us', 410, y + 66, 40, { weight: 600 });
+    text('rebuild the hidden air from the public code: 0.2 s with a shell', 410, y + 112, 26, { color: C.smoke });
+    const sw = tw('rebuild the hidden air from the public code: 0.2 s with a shell', 26) * closed;
+    line(410, y + 103, 410 + sw, y + 103, C.bone, 2.5);
+    text('CLOSED', 1510, y + 82, 56, { font: 'Anton', align: 'right', color: C.water, spacing: 3, alpha: closed });
+    text('a secret on the server the agent cannot read', 410, y + 158, 26, { color: C.water, alpha: seg(t, 8.4, 8.9) });
+    x.restore();
+  }
+  x.restore();
+}
+
+function reproduce(t) {
+  const a = ease(seg(t, 10.2, 10.8));
+  if (a <= 0) return;
+  x.save(); x.globalAlpha = a;
+  header('ONE COMMAND', t, 10.4, 160, 72);
+  // terminal
+  rect(160, 300, 800, 460, 18, '#121418', 1, '#2a2d33');
+  rect(160, 300, 800, 50, [18, 18, 0, 0], '#1b1e23');
+  ['#ff5f57', '#febc2e', '#28c840'].forEach((c, i) => dot(192 + i * 24, 325, 7, c));
+  const cmd = 'python run_eval.py', typed = cmd.slice(0, Math.max(0, Math.floor((t - 10.7) / 0.055)));
+  text('$', 200, 420, 30, { font: 'JBM', color: '#4fbf6a' });
+  text(typed, 235, 420, 30, { font: 'JBM' });
+  const out = [['reference, heuristics, baselines: 10 worlds', 11.9], ['MCP server = in-process: identical', 12.2], ['72 of 72 model missions reproduce', 12.5]];
+  out.forEach(([s, t0], i) => {
+    const k = seg(t, t0, t0 + 0.2);
+    text('✓', 200, 500 + i * 60, 26, { font: 'JBM', color: '#4fbf6a', alpha: k });
+    text(s, 240, 500 + i * 60, 26, { font: 'JBM', alpha: k });
+  });
+  // Harbor card
+  const h = eOut(seg(t, 12.9, 13.5));
+  if (h > 0) {
+    x.save(); x.globalAlpha *= h; x.translate((1 - h) * 40, 0);
+    rect(1010, 300, 750, 460, 18, C.panel, 1, '#3b3f47');
+    text("HARBOR · THE JUDGES' PROTOCOL", 1055, 368, 22, { color: C.smoke, spacing: 4 });
+    [['Reference', '0.89', C.water], ['OpenCode + Sonnet 5.5', '0.73', C.ember], ['Do nothing', '0.00', C.bone], ['Stop early', '0.04', C.bone]].forEach(([k, v, c], i) => {
+      const yy = 450 + i * 78, kk = seg(t, 13.2 + i * 0.25, 13.6 + i * 0.25);
+      line(1055, yy - 48, 1715, yy - 48, '#2a2d33', 1.5, null, kk);
+      text(k, 1055, yy, 30, { alpha: kk });
+      text(v, 1715, yy, 36, { font: 'JBM', weight: 700, align: 'right', color: c, alpha: kk });
+    });
+    text('3 worlds, run in Docker over MCP', 1055, 730, 20, { color: C.smoke });
+    x.restore();
+  }
+  x.restore();
+}
+
+window.render = function (t) {
+  bg();
+  holds(t, 1 - ease(seg(t, 10.0, 10.5)));
+  reproduce(t);
+};
+window.ready.then(() => window.render(0));
+</script>
+</body></html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pitch · why agents fail</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="p_common.js"></script>
+<script>
+// PITCH · WHY AGENTS FAIL · 12.5 s. Voice: 0.3 "We replay counterfactuals to tie every lost point to a decision."
+// · 5.0 "The models' main mistake:" · 6.6 "they stop fitting early," · 8.6 "and misjudge how the wind grows with altitude."
+window.DURATION = 12.5;
+// Claude Sonnet 5.5, gap to the reference split by the counterfactual replays (results/summary.md)
+const PARTS = [
+  { k: 'EXPERIMENTS', d: 'which test drops to make', v: 0.037, color: C.smoke },
+  { k: 'FITTING', d: 'the model of the air', v: 0.142, color: C.ember },
+  { k: 'AIMING', d: 'the release point', v: -0.031, color: C.bone },
+];
+function lost(t, alpha) {
+  if (alpha <= 0) return;
+  x.save(); x.globalAlpha = alpha;
+  header('WHERE THE POINTS ARE LOST', t, 0.3, 150, 64);
+  text('CLAUDE SONNET 5.5 · GAP TO THE REFERENCE: 0.15', W / 2, 250, 20, { align: 'center', color: C.smoke, spacing: 4, alpha: seg(t, 0.8, 1.3) });
+  // one bar for the gap, which splits into three decisions
+  const X0 = 360, BW = 1200, scale = BW / 0.18, y = 380;
+  const grow = eOut(seg(t, 1.0, 1.9)), split = ease(seg(t, 2.0, 3.0));
+  let cx = X0;
+  PARTS.forEach((p, i) => {
+    const w = Math.max(0, p.v) * scale * grow;
+    const gap = split * 18 * i;
+    rect(cx + gap, y, w, 70, 8, split > 0 ? p.color : C.ember, i === 1 || split > 0 ? 1 : 1);
+    cx += w;
+  });
+  // three boxes, one per decision
+  PARTS.forEach((p, i) => {
+    const a = eOut(seg(t, 2.2 + i * 0.35, 2.8 + i * 0.35));
+    if (a <= 0) return;
+    const bx = 300 + i * 450, by = 580 + (1 - a) * 20, hi = i === 1 ? seg(t, 3.3, 3.8) : 0;
+    rect(bx, by, 420, 250, 18, C.panel, a, hi > 0 ? C.ember : '#3b3f47');
+    x.save(); x.globalAlpha *= a;
+    text(p.k, bx + 32, by + 66, 34, { font: 'Anton', spacing: 2, color: hi > 0 ? C.ember : C.bone });
+    text(p.d, bx + 32, by + 104, 22, { color: C.smoke });
+    text((p.v > 0 ? '' : '') + (p.v < 0 ? 'none' : p.v.toFixed(2)), bx + 32, by + 200, 64, { font: 'JBM', weight: 700, color: p.v > 0 ? p.color : C.smoke });
+    x.restore();
+  });
+  x.restore();
+}
+
+function mistake(t) {
+  const a = ease(seg(t, 4.8, 5.4));
+  if (a <= 0) return;
+  x.save(); x.globalAlpha = a;
+  header('THE MAIN MISTAKE', t, 5.0, 150, 64);
+  // left: stops fitting early
+  const la = eOut(seg(t, 6.5, 7.1));
+  x.save(); x.globalAlpha *= la;
+  rect(140, 280, 780, 620, 22, C.panel, 1, '#3b3f47');
+  text('STOPS FITTING EARLY', 190, 360, 40, { font: 'Anton', spacing: 2 });
+  text('calculations used, out of 120', 190, 400, 22, { color: C.smoke });
+  const meter = (y, label, v, color, t0) => {
+    const k = eOut(seg(t, t0, t0 + 1.0));
+    text(label, 190, y, 26, { weight: 600 });
+    rect(190, y + 22, 680, 40, 8, C.dim);
+    rect(190, y + 22, 680 * v / 120 * k, 40, 8, color);
+    text(String(Math.round(v * k)), 190 + 680 * v / 120 * k + 14, y + 54, 30, { font: 'JBM', weight: 700, color });
+  };
+  meter(510, 'Claude Sonnet 5.5', 28, C.ember, 6.8);
+  meter(650, 'Reference', 85, C.water, 7.3);
+  text('it settles on a model that fits the test drops', 190, 800, 22, { color: C.smoke, alpha: seg(t, 7.8, 8.3) });
+  text('but not the altitudes the fires require', 190, 832, 22, { color: C.smoke, alpha: seg(t, 7.8, 8.3) });
+  x.restore();
+  // right: wind against altitude, true and as the model believes
+  const ra = eOut(seg(t, 8.5, 9.1));
+  x.save(); x.globalAlpha *= ra;
+  rect(1000, 280, 780, 620, 22, C.panel, 1, '#3b3f47');
+  text('MISJUDGES THE WIND ALOFT', 1050, 360, 40, { font: 'Anton', spacing: 2 });
+  text('wind speed against altitude', 1050, 400, 22, { color: C.smoke });
+  const PX = 1100, PY = 820, PW = 600, PH = 360;          // plot: speed 0..16 m/s across, altitude 0..150 m up
+  line(PX, PY, PX + PW, PY, C.smoke, 1.5); line(PX, PY, PX, PY - PH, C.smoke, 1.5);
+  text('0', PX - 16, PY + 6, 18, { font: 'JBM', align: 'right', color: C.smoke });
+  text('150 m', PX - 16, PY - PH + 6, 18, { font: 'JBM', align: 'right', color: C.smoke });
+  text('wind speed', PX + PW, PY + 36, 18, { align: 'right', color: C.smoke });
+  const curve = (shear, color, t0, dash) => {
+    const k = ease(seg(t, t0, t0 + 1.4));
+    x.save(); x.strokeStyle = color; x.lineWidth = 4; if (dash) x.setLineDash(dash); x.beginPath();
+    for (let i = 0; i <= 60 * k; i++) {
+      const z = 2 + (148 * i) / 60, s = 10.9 * Math.pow(z / 100, shear);
+      const px = PX + ((s - 3) / 10) * PW, py = PY - (z / 150) * PH;
+      i ? x.lineTo(px, py) : x.moveTo(px, py);
+    }
+    x.stroke(); x.restore();
+  };
+  curve(0.24, C.water, 8.8);
+  curve(0.28, C.ember, 9.3, [10, 8]);   // Sonnet 5.5's median shear error: 16%
+  const lk = seg(t, 10.0, 10.5);
+  dot(1060, 440, 6, C.water, lk); text('the real air', 1076, 447, 22, { alpha: lk });
+  dot(1250, 440, 6, C.ember, lk); text("the model's belief (dashed)", 1266, 447, 22, { alpha: lk });
+  text('median error: 16% for Sonnet 5.5, 12% for Opus', 1050, 870, 22, { color: C.bone, alpha: seg(t, 10.4, 10.9) });
+  x.restore();
+  x.restore();
+}
+
+window.render = function (t) {
+  bg();
+  lost(t, 1 - ease(seg(t, 4.6, 5.1)));
+  mistake(t);
+};
+window.ready.then(() => window.render(0));
+</script>
+</body></html>
