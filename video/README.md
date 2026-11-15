@@ -117,11 +117,24 @@ node video/render.js video/s10_terminal.html video/out/s10_one_command.mp4
 
 | Scene | Film | Length | What is on screen |
 |---|---|---|---|
-| 5 · The real environment | 2:30 | 60 s | Top of the site; "How a mission works"; the presentation-mode button is clicked; the briefing: known physics (24.5 s), the six unknowns (32 s), the seven MCP tools card (39.5 s), "Neither tool knows the real air" (45 s), the imposed flight paths of the fires (54 s) |
-| 6 · The reward and the reference | 3:30 | 60 s | The scoring lines of the briefing; the score chart with the reference and its method card (17 s); each degraded heuristic highlighted in turn, 0.60 down to 0.04 (40 s) |
-| 7 · Results | 4:30 | 80 s | Hero numbers; Sonnet 4.5, Sonnet 5.5, Opus 5.5 rows; Sonnet 5.5 seed 2 run 1 chosen through the menus (29 s), hotspot 3 (33 s); side-by-side 3D view turning slowly: reference 0.4 m, Sonnet 3.4 m; hotspot table; back to Opus vs reference (72 s) |
-| 8 · Why agents fail | 5:50 | 110 s | "Where the points were lost"; Sonnet 4.5 seed 1 run 2: its last compare (35.6 m off) then its five drops, drag and wind direction errors (24 to 56 s); Sonnet 5.5: 28 of 120 calculations, fit error, shear (57 to 81 s); Opus 5.5 seed 3 run 2: shear, the misses (82 s); shear again under the closing finding (100 s) |
-| 9 · Trying to cheat | 7:40 | 80 s | Baselines on the chart; the README's reward-integrity table row by row (28 s), the seed exploit and its fix (58 s), transcripts replayed call by call (73 s) |
-| 10 · One command | 9:00 | 60 s | A terminal: `python run_eval.py` runs for 45 s (MCP parity and the 72 replayed transcripts highlighted), then the camera moves in on the results table; fade out at 59 s |
+| 5 · The real environment | 2:30 | 50 s | Top of the site; "How a mission works"; the presentation-mode button is clicked; the briefing: known physics, the six unknowns, the seven MCP tools card (14.5 s), "Neither tool knows the real air" (26.5 s), the imposed flight paths of the fires (33 s) |
+| 6 · The reward and the reference | 3:20 | 61 s | The scoring lines of the briefing; the reference row and its method card (16 s); each degraded heuristic highlighted in turn, 0.60 down to 0.04 (45.5 s) |
+| 7 · Results | 4:21 | 72 s | Hero numbers; Sonnet 4.5, Sonnet 5.5, Opus 5.5 rows; Sonnet 5.5 seed 2 run 1 chosen through the menus (31 s), hotspot 3; side-by-side 3D view turning: reference 0.4 m, Sonnet 3.4 m; back to Opus vs reference (51 s) |
+| 8 · Why agents fail | 5:33 | 101 s | "Where the points were lost"; Sonnet 4.5's last compare (35.6 m off) and its five drops (21 s); Sonnet 5.5: 28 of 120 calculations, then shear (36 s); Opus 5.5 seed 3 run 2, shear (51 s); the shear finding (58 s); the weather variant, Opus 0.84 in the menu (80 s) |
+| 9 · Trying to cheat | 7:14 | 67 s | Baselines on the chart; the README's reward-integrity table, the seed exploit and its fix (20.5 s), transcripts replayed call by call (55 s) |
+| 10 · One command | 8:21 | 58 s | A terminal: `python run_eval.py` runs for 45 s; cards with the judges' protocol measured in Harbor (13 s) and the shell limit (33 s); the camera moves in on the results table; fade out at 57 s |
+
+The film ends at 9:19.
+
+## Voice-over and final mix
+
+The voice-over is generated with ElevenLabs (voice Adam Stone, model eleven_v4, stability 0.35), one file
+per section in `video/audio/vo_<section>.mp3` (not committed). The texts are those of the video script;
+scene 8 is a shortened version and scene 10 reports the Harbor results. Each scene's timeline above is
+set on the pauses of its voice-over.
+
+```bash
+python video/mix_audio.py      # -> video/out/break_the_agent_film.mp4 (video + voice, -16 LUFS)
+```
 
 Cross-fades of 0.7 s hide the moments where the page layout changes (presentation mode, a new episode, the README).

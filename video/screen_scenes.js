@@ -216,8 +216,7 @@ const s8 = {
     { t0: 45.5, t1: 50.4, sel: hyp(5), pad: 2 },
     { t0: 51.5, t1: 57.5, sel: hyp(5), pad: 2 },
     { t0: 60.5, t1: 79.6, sel: hyp(5), pad: 2 },
-    { t0: 81, t1: 90, sel: '#sel-agent', pad: 4 },
-    { t0: 90, t1: 101.5, sel: ['#tiles > .tile:nth-child(1)', '#tiles > .tile:nth-child(2)'], pad: 4 },
+    { t0: 81, t1: 101.5, sel: '#sel-agent', pad: 4 },   // the menu shows the variant's mean, 0.84
   ],
 };
 
