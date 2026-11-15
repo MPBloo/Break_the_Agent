@@ -5,3 +5,4 @@ data/
 .venv/
 .env
 video/out/
+video/audio/
