@@ -3,8 +3,8 @@
 
     python video/make_pitch.py      # -> video/out/break_the_agent_pitch_2min.mp4
 
-Full motion design: shots cut from M1 (hook and title), M2 (the Canadair), M3 (the task and the score), and
-three scenes made for the pitch (p_results, p_why, p_holds). The voice-over (ElevenLabs, Adam Stone) is one
+Full motion design: shots cut from M1 (the closing title), M2 (the Canadair), M3 (the task and the score), and
+five scenes made for the pitch (p_intro, p_air, p_results, p_why, p_holds). The voice-over (ElevenLabs, Adam Stone) is one
 take, video/audio/vo_pitch.mp3, cut at its pauses into 16 phrases, each placed on its picture.
 """
 import os
@@ -15,16 +15,14 @@ OUT = os.path.join(HERE, "out")
 VOICE = os.path.join(HERE, "audio", "vo_pitch.mp3")
 
 SOURCES = ["m1_break_the_agent.mp4", "m2_fire_and_water.mp4", "m3_the_problem.mp4",
-           "p_results.mp4", "p_why.mp4", "p_holds.mp4"]
-M1, M2, M3, PR, PW, PH = range(6)
+           "p_results.mp4", "p_why.mp4", "p_holds.mp4", "p_intro.mp4", "p_air.mp4"]
+M1, M2, M3, PR, PW, PH, PI, PA = range(8)
 
 # (source, start, end) in the source's own time
 SHOTS = [
-    (M1, 0.0, 9.9),     # the eye: writes code, proves theorems... a world it has never seen
-    (M1, 12.3, 14.2),   # ONE SHOT, NO FEEDBACK
-    (M1, 19.5, 24.5),   # the title assembles: BREAK THE AGENT
+    (PI, 0.0, 16.8),    # the problem: agents write code... can they learn a system they cannot see? BLIND DROP
     (M2, 9.0, 19.5),    # the Canadair drops, misses: wind, heat, drag
-    (M3, 1.0, 7.0),     # THE AIR IS UNKNOWN: six dials
+    (PA, 0.0, 6.0),     # THE AIR IS UNKNOWN: the six hidden numbers, named
     (M3, 13.0, 19.5),   # 1 CALIBRATE: ten noisy test drops
     (M3, 23.2, 28.8),   # 2 BUILD A MODEL: calculations run down
     (M3, 29.0, 36.8),   # 3 COMMIT: five blind drops

@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pitch · the problem</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="p_common.js"></script>
+<script>
+// PITCH · THE PROBLEM · 16.8 s. Voice: 0.9 "AI agents can write code and prove theorems." · 4.0 "But can they learn a world they
+// have never seen, with a few experiments and one shot?" · 12.4 "We built an environment to find out."
+window.DURATION = 16.8;
+function chip(s, cx, cy, t0, t) {
+  const a = eBack(seg(t, t0, t0 + 0.5));
+  if (a <= 0) return;
+  const w = tw(s, 56, 'Anton', 400, 2) + 150;
+  x.save(); x.globalAlpha = clamp(a); x.translate(cx, cy); x.scale(a, a);
+  rect(-w / 2, -60, w, 120, 60, C.panel, 1, '#3b3f47');
+  text(s, -w / 2 + 50, 22, 56, { font: 'Anton', spacing: 2 });
+  // a check mark
+  x.strokeStyle = C.water; x.lineWidth = 7; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.beginPath(); x.moveTo(w / 2 - 80, 0); x.lineTo(w / 2 - 64, 16); x.lineTo(w / 2 - 38, -14); x.stroke();
+  x.restore();
+}
+const CARDS = [
+  ['A FEW COSTLY EXPERIMENTS', 'tests cost time, money or risk', 5.6],
+  ['A MODEL THAT HOLDS ELSEWHERE', 'in conditions never tested', 6.9],
+  ['ONE SHOT, NO FEEDBACK', 'act once, see nothing until the end', 8.3],
+];
+window.render = function (t) {
+  bg();
+  // what agents already do
+  const done = 1 - ease(seg(t, 3.6, 4.1));
+  if (done > 0) {
+    x.save(); x.globalAlpha = done;
+    text('TODAY, AI AGENTS', W / 2, 330, 26, { font: 'JBM', weight: 700, align: 'center', color: C.smoke, spacing: 6, alpha: seg(t, 0.3, 0.8) });
+    chip('WRITE CODE', W / 2 - 330, 520, 1.1, t);
+    chip('PROVE THEOREMS', W / 2 + 290, 520, 2.4, t);
+    x.restore();
+  }
+  // the question, and what the skill needs
+  const q = 1 - ease(seg(t, 10.6, 11.2));
+  if (t > 3.9 && q > 0) {
+    x.save(); x.globalAlpha = q;
+    header('BUT CAN THEY LEARN A SYSTEM THEY CANNOT SEE?', t, 4.0, 250, 72);
+    CARDS.forEach(([k, d, t0], i) => {
+      const a = eOut(seg(t, t0, t0 + 0.6));
+      if (a <= 0) return;
+      const bx = 210 + i * 520, by = 470 + (1 - a) * 30, hot = i === 2;
+      x.save(); x.globalAlpha *= a;
+      rect(bx, by, 480, 300, 20, C.panel, 1, hot ? C.ember : '#3b3f47');
+      text(String(i + 1), bx + 40, by + 90, 64, { font: 'Anton', color: hot ? C.ember : C.smoke });
+      text(k, bx + 40, by + 175, 29, { font: 'Anton', spacing: 1, color: hot ? C.ember : C.bone });
+      text(d, bx + 40, by + 230, 26, { color: C.smoke });
+      x.restore();
+    });
+    x.restore();
+  }
+  // the answer: an environment to find out
+  if (t > 11.0) {
+    const k = eOut(seg(t, 11.2, 12.2));
+    x.save(); x.globalAlpha = k; x.beginPath(); x.rect(0, 300, W, 330); x.clip();
+    text('BLIND DROP', W / 2, 560 + (1 - k) * 200, 240, { font: 'Anton', align: 'center', spacing: 6 });
+    x.restore();
+    const lw = 980 * ease(seg(t, 12.0, 13.0));
+    line(W / 2 - lw / 2, 610, W / 2 + lw / 2, 610, C.ember, 4);
+    text('AN RL ENVIRONMENT TO FIND OUT', W / 2, 690, 34, { font: 'JBM', weight: 700, align: 'center', spacing: 6, alpha: seg(t, 12.6, 13.2) });
+    text('Break the Agent · AfterQuery challenge · Junction 2026', W / 2, 760, 28, { align: 'center', color: C.smoke, alpha: seg(t, 13.4, 14.0) });
+  }
+};
+window.ready.then(() => window.render(0));
+</script>
+</body></html>

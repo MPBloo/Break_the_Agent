@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pitch · the air is unknown</title>
+<style>
+@font-face { font-family: Anton; src: url(fonts/anton-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 400; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Inter; font-weight: 600; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 400; src: url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: JBM; font-weight: 700; src: url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2"); }
+html, body { margin: 0; background: #0E0F12; overflow: hidden; } canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="p_common.js"></script>
+<script>
+// PITCH · THE AIR IS UNKNOWN · 6 s: the six hidden numbers, named and readable.
+window.DURATION = 6;
+const VARS = [
+  ['DRAG', 'slows the falling water'],
+  ['WIND SPEED', 'at 100 m'],
+  ['WIND DIRECTION', 'where it blows'],
+  ['WIND GROWTH', 'how it strengthens with altitude'],
+  ['WIND TURN', 'how it turns with altitude'],
+  ['UPDRAFT', 'the heat above each fire'],
+];
+window.render = function (t) {
+  bg();
+  header('THE AIR IS UNKNOWN', t, 0.1, 170, 80);
+  text('6 HIDDEN NUMBERS DECIDE WHERE THE WATER LANDS', W / 2, 262, 26, { font: 'JBM', weight: 700, align: 'center', color: C.smoke, spacing: 5, alpha: seg(t, 0.5, 1.0) });
+  VARS.forEach(([k, d], i) => {
+    const col = i % 3, row = Math.floor(i / 3), a = eOut(seg(t, 0.8 + i * 0.25, 1.4 + i * 0.25));
+    if (a <= 0) return;
+    const bx = 190 + col * 520, by = 340 + row * 270 + (1 - a) * 24;
+    x.save(); x.globalAlpha = a;
+    rect(bx, by, 500, 230, 20, C.panel, 1, '#3b3f47');
+    text(k, bx + 40, by + 90, 48, { font: 'Anton', spacing: 2 });
+    text(d, bx + 40, by + 140, 26, { color: C.smoke });
+    text('?', bx + 440, by + 110, 80, { font: 'Anton', align: 'center', color: C.ember });
+    x.restore();
+  });
+  text('The physics is given in full. Only these six numbers are hidden.', W / 2, 950, 32, { align: 'center', alpha: seg(t, 2.6, 3.1) });
+};
+window.ready.then(() => window.render(0));
+</script>
+</body></html>
