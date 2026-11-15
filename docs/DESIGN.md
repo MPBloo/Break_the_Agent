@@ -154,4 +154,11 @@ If it scores near zero, loosen the same two.
   not measure play quality.
 - No small model has been trained. `export_dataset.py` writes reference missions as
   tool-calling transcripts; training and before/after evaluation remain to be done.
-- The Harbor packaging has not been run under Docker.
+- Harbor: the packaging now runs end to end under Docker (Harbor 0.26). On seeds 1 to 3: reference
+  0.890, OpenCode + Sonnet 5.5 with MCP tools only 0.728 (below on 3 of 3), do-nothing 0, stop-early
+  0.040. With OpenCode's shell, Sonnet 5.5 re-implements the simulator from the briefing, fits with
+  scipy and matches the reference (0.889). A reference that also fits locally
+  (`agents/reference_local.py`) gains nothing (0.857 against 0.859 on 10 worlds), and test plans that
+  cover the whole flight envelope do no better: ten noisy drops are the limit, not computation. A gap
+  that survives a shell needs experiments that are harder to design (for example competing physical
+  models to tell apart, or fires flown in conditions far from any feasible test).

@@ -56,6 +56,12 @@ On 60 seeds the reference averages 0.846, with a minimum of 0.71.
   with the current wording. The wording describes the firefighting task directly and was not tuned
   to get past the filter. Under an earlier wording it completed 3 of 9 missions (0.64 to 0.94).
 
+**In the judges' harness.** The same protocol runs in Harbor with OpenCode over MCP (see
+"The judges' protocol in Harbor" below): reference 0.890, OpenCode + Sonnet 5.5 0.728 and below the
+reference on all three worlds, do-nothing 0.000, stop-early 0.040. One limit, stated up front: if
+OpenCode keeps its shell, Sonnet 5.5 re-implements the simulator from the briefing, skips the
+calculation budget and matches the reference (0.889 against 0.890).
+
 Earlier runs (previous wording, 10 m radius, the first Haiku retest) are kept in `results/llm/`
 and `results/archive/`, listed in `results/summary.md` and under "Earlier runs" in the viewer.
 `results/presented.json` decides which runs make the headline table.
@@ -186,10 +192,58 @@ python harbor/make_tasks.py --seeds 5                        # self-contained Ha
 ```
 
 The Harbor tasks follow Harbor's official multi-container MCP example: the agent in `main`, the
-mission in a separate `mcp-server` container, `solution/solve.sh` running the reference, and
-`tests/test.sh` writing the mission score to `/logs/verifier/reward.txt`. The server, HTTP
-transport, solution and score endpoint are tested here; the Docker packaging itself has not
-been run (no Docker daemon was available).
+mission in a separate `mcp-server` container that the agent reaches only through MCP,
+`solution/solve.sh` running the reference, and `tests/test.sh` writing the mission score to
+`/logs/verifier/reward.txt`. The agent's container has Python with numpy and scipy.
+
+### The judges' protocol in Harbor (checked with Harbor 0.26 and Docker)
+
+```bash
+pip install harbor
+python harbor/make_tasks.py --seeds 3
+bash harbor/run_protocol.sh anthropic/claude-sonnet-5-5    # reference, 3 agent runs, do-nothing, stop-early
+```
+
+`harbor/run_protocol.sh` runs, on every task: the reference (`-a oracle`), three OpenCode runs, the
+do-nothing baseline (`-a nop`) and the stop-early baseline (`agents/harbor_stop_early.py`, the reference
+stopped after two of the five hotspots). The OpenCode runs have the shell, file-writing and editing tools
+turned off, so the agent acts through the mission's MCP tools only, the setting the challenge announced.
+
+Measured on seeds 1 to 3 of one generated task set (one trial per task):
+
+| Harbor run | Seed 1 | Seed 2 | Seed 3 | Mean |
+|---|---|---|---|---|
+| Reference (`oracle`) | 0.869 | 0.943 | 0.857 | **0.890** |
+| OpenCode + Claude Sonnet 5.5, MCP tools only | 0.846 | 0.657 | 0.680 | **0.728** |
+| Do nothing (`nop`) | | | | 0.000 |
+| Stop early (seed 1) | 0.040 | | | |
+
+The agent is below the reference on all three worlds, and its mean matches our local runs (0.73).
+
+### With a shell
+
+OpenCode's default tools include a shell. With it, Sonnet 5.5 re-implements the simulator from the
+briefing (`sim.py` in its trajectory), fits the six unknowns with `scipy.optimize.least_squares` on every
+measurement and aims locally: it uses 1 `compare` and 5 `simulate` instead of the budget, and reaches the
+reference.
+
+| Harbor run | Seed 1 | Seed 2 | Seed 3 | Mean |
+|---|---|---|---|---|
+| Reference (`oracle`) | 0.869 | 0.943 | 0.857 | 0.890 |
+| OpenCode + Claude Sonnet 5.5 with a shell | 0.828 (0.928 in a second trial) | 0.916 | 0.922 | 0.889 |
+
+This is legitimate play: the briefing gives the full physics on purpose. It shows where the task's
+difficulty lies: with unlimited computation, ten noisy test drops are enough for a strong model to reach
+the same estimates as our reference. We checked that the reference cannot pull ahead by computing more:
+`agents/reference_local.py` (same tests, local simulator, full least-squares fit) scores 0.857 over 10
+worlds, like the budgeted reference (0.859), and test plans covering the whole flight envelope do no
+better (0.844, 0.839). Restoring a gap with a shell would need experiments that are harder to design,
+not more computation. The scores above, the video and the results site use the MCP-tools-only setting.
+
+Each generated task set draws a fresh secret salt (`--salt` to fix it), so its worlds differ from the
+local seeds: compare an agent with the oracle on the same task. Behind a TLS-inspecting proxy (some cloud
+sandboxes), add `--extra-ca <root certificate>` so the image builds can reach PyPI; it is not needed on
+a normal machine.
 
 ## Repository
 

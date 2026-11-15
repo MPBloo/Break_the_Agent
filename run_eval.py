@@ -260,10 +260,15 @@ def main() -> int:
     report = build_report(groups, summary, os.path.join(a.out, "report.html"), a.fragment)
     print(f"[5/5] Wrote results/summary.md, results/summary.json, results/report.html ({report // 1024} KB).")
     print()
-    w = max(len(r["label"]) for r in summary["agents"])
+    main_rows = [r for r in summary["agents"] if r["group"] != "legacy"]
+    old_rows = [r for r in summary["agents"] if r["group"] == "legacy"]
+    w = max(len(r["label"]) for r in main_rows)
+    row = lambda r: print(f"{r['label']:<{w}}  {r['group']:<10} {r['n']:>3}  {r['mean']:>6.3f} {r['std']:>6.3f} {r['min']:>6.3f} {r['max']:>6.3f}")
     print(f"{'Agent':<{w}}  {'kind':<10} {'n':>3}  {'mean':>6} {'std':>6} {'min':>6} {'max':>6}")
-    for r in summary["agents"]:
-        print(f"{r['label']:<{w}}  {r['group']:<10} {r['n']:>3}  {r['mean']:>6.3f} {r['std']:>6.3f} {r['min']:>6.3f} {r['max']:>6.3f}")
+    for r in main_rows:
+        row(r)
+    if old_rows:   # earlier runs (other radius, variants, trials): replayed and checked, not in the headline
+        print(f"\n{len(old_rows)} earlier runs replayed and checked (not in the headline): " + ", ".join(r["label"] for r in old_rows))
     print(f"\nDone in {time.time() - t0:.0f} s." + ("" if ok else "  SOME CHECKS FAILED, see above."))
     return 0 if ok else 1
 

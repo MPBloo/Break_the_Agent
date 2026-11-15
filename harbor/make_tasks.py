@@ -4,13 +4,13 @@
     python harbor/make_tasks.py --seeds 5          # writes harbor/tasks/canadair-firefighting-seed-1 ... -5
     harbor run -p harbor/tasks/canadair-firefighting-seed-1 -a oracle       # the reference solution
     harbor run -p harbor/tasks/canadair-firefighting-seed-1 -a opencode -m <model>
+    PYTHONPATH=. harbor run -p harbor/tasks/canadair-firefighting-seed-1 -a agents.harbor_stop_early:StopEarlyAgent
 
 Layout follows Harbor's official multi-container MCP example (examples/tasks/hello-mcp):
 the agent runs in `main`, the mission lives in a separate `mcp-server` container that the agent
 can only reach through MCP, and the verifier reads the score from the server.
 
-Not exercised in this repository's CI: no Docker daemon was available where it was written.
-The server, the HTTP transport, the solution and the /score endpoint it relies on are tested.
+Checked end to end under Docker with Harbor 0.26: oracle, nop and the stop-early agent.
 """
 from __future__ import annotations
 
@@ -70,11 +70,24 @@ The mission tools are served by the MCP server `canadair-firefighting` at `http:
 Everything you need to know is in the briefing returned by `get_mission`.
 '''
 
+# numpy and scipy are there so an agent with a shell (OpenCode) has the usual tools to compute with.
 MAIN_DOCKERFILE = '''FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y curl python3 python3-pip && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y ca-certificates curl python3 python3-pip python3-numpy python3-scipy \\
+    && rm -rf /var/lib/apt/lists/*
+{extra_ca}
 WORKDIR /app
+'''
+
+# Only with --extra-ca: trust an extra root certificate in the images (for building behind a TLS-inspecting
+# proxy, as in some cloud sandboxes). Not needed, and not used, on a normal machine.
+MAIN_EXTRA_CA = '''COPY extra-ca.crt /usr/local/share/ca-certificates/extra-ca.crt
+RUN update-ca-certificates
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \\
+    PIP_CERT=/etc/ssl/certs/ca-certificates.crt NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/extra-ca.crt
+'''
+SERVER_EXTRA_CA = '''COPY extra-ca.crt /app/extra-ca.crt
+ENV PIP_CERT=/app/extra-ca.crt
 '''
 
 COMPOSE = '''# Merged on top of Harbor's base docker-compose config (see Harbor's hello-mcp example).
@@ -103,7 +116,7 @@ services:
 SERVER_DOCKERFILE = '''FROM python:3.12-slim
 
 WORKDIR /app
-RUN pip install --no-cache-dir "mcp>=1.12" uvicorn
+{extra_ca}RUN pip install --no-cache-dir "mcp>=1.12" uvicorn
 COPY bomber /app/bomber
 
 EXPOSE 8000
@@ -162,6 +175,8 @@ def main() -> None:
     ap.add_argument("--salt", default=None,
                     help="secret mixed into world generation; default: a fresh random value. The agent's "
                          "container cannot read it, so it cannot rebuild the hidden air from the public code.")
+    ap.add_argument("--extra-ca", default=None, metavar="PEM",
+                    help="only for building behind a TLS-inspecting proxy: a root certificate to trust in the images")
     a = ap.parse_args()
     salt = a.salt if a.salt is not None else secrets.token_hex(16)
     for seed in range(1, a.seeds + 1):
@@ -169,9 +184,12 @@ def main() -> None:
         shutil.rmtree(d, ignore_errors=True)
         write(os.path.join(d, "task.toml"), TASK_TOML.format(seed=seed))
         write(os.path.join(d, "instruction.md"), INSTRUCTION_MD.format(instruction=INSTRUCTION))
-        write(os.path.join(d, "environment", "Dockerfile"), MAIN_DOCKERFILE)
+        write(os.path.join(d, "environment", "Dockerfile"), MAIN_DOCKERFILE.format(extra_ca=MAIN_EXTRA_CA if a.extra_ca else ""))
         write(os.path.join(d, "environment", "docker-compose.yaml"), COMPOSE.format(seed=seed, salt=salt))
-        write(os.path.join(d, "environment", "mcp-server", "Dockerfile"), SERVER_DOCKERFILE)
+        write(os.path.join(d, "environment", "mcp-server", "Dockerfile"), SERVER_DOCKERFILE.format(extra_ca=SERVER_EXTRA_CA if a.extra_ca else ""))
+        if a.extra_ca:
+            shutil.copy(a.extra_ca, os.path.join(d, "environment", "extra-ca.crt"))
+            shutil.copy(a.extra_ca, os.path.join(d, "environment", "mcp-server", "extra-ca.crt"))
         shutil.copytree(os.path.join(ROOT, "bomber"), os.path.join(d, "environment", "mcp-server", "bomber"),
                         ignore=shutil.ignore_patterns("__pycache__", "analysis.py", "report*", "runner.py"))
         write(os.path.join(d, "solution", "solve.sh"), SOLVE_SH, executable=True)

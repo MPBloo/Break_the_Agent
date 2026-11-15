@@ -10,10 +10,10 @@ canvas { display: block; }
 <body>
 <canvas id="c" width="1920" height="1080"></canvas>
 <script>
-// Scene 10 · ONE COMMAND · 60 s. A terminal replays the real output of `python run_eval.py`, captured with the
+// Scene 10 · ONE COMMAND · 58 s. A terminal replays the real output of `python run_eval.py`, captured with the
 // time at which each line was printed (the run takes 45 s), then the camera moves in on the results table.
-window.DURATION = 60;
-const OUT = [[0.0, "[1/5] Playing 11 scripted agents on seeds 1..10 ..."], [17.22, "[2/5] MCP parity: reference on seed 1 scores 0.9371 over MCP, 0.9371 in-process -> identical"], [27.1, "[3/5] Frontier-model transcripts: 72 found in results/llm/, 72 reproduce their stored score on replay."], [27.1, "[4/5] Attributing lost points ..."], [45.38, "[5/5] Wrote results/summary.md, results/summary.json, results/report.html (4476 KB)."], [45.39, ""], [45.39, "Agent                               kind         n    mean    std    min    max"], [45.39, "Reference solution                  reference   10   0.859  0.058  0.724  0.937"], [45.39, "Claude Opus 5.5                     frontier     9   0.853  0.062  0.745  0.942"], [45.39, "Claude Sonnet 5.5                   frontier     9   0.730  0.075  0.616  0.842"], [45.39, "Claude Sonnet 4.5                   frontier     9   0.315  0.194  0.000  0.604"], [45.39, "Claude Haiku 5.5                    frontier     9   0.000  0.000  0.000  0.000"], [45.4, "Stops fitting early                 heuristic   10   0.599  0.308  0.000  0.887"], [45.4, "One flight condition                heuristic   10   0.745  0.087  0.631  0.899"], [45.4, "Assumes uniform wind                heuristic   10   0.385  0.147  0.128  0.604"], [45.4, "Ignores the smoke column            heuristic   10   0.192  0.111  0.000  0.396"], [45.4, "Trusts priors                       heuristic   10   0.039  0.068  0.000  0.215"], [45.4, "Stop early                          baseline    10   0.042  0.022  0.000  0.076"], [45.41, "Calibrate, never drop               baseline    10   0.000  0.000  0.000  0.000"], [45.41, "Release overhead                    baseline    10   0.000  0.000  0.000  0.000"], [45.41, "Random actions                      baseline    10   0.000  0.000  0.000  0.000"], [45.41, "Do nothing                          baseline    10   0.000  0.000  0.000  0.000"], [45.41, "claude-haiku-5-5                    legacy       9   0.270  0.389  0.000  0.942"], [45.41, "claude-opus-5-5-weather-2026-11-15  legacy       9   0.839  0.064  0.750  0.974"], [45.42, "claude-sonnet-5-5                   legacy       9   0.708  0.072  0.618  0.859"], [45.42, "haiku-high-nouvel-essai             legacy       9   0.000  0.000  0.000  0.000"], [45.42, ""], [45.42, "Done in 45 s."]];
+window.DURATION = 58;
+const OUT = [[0.0, "[1/5] Playing 11 scripted agents on seeds 1..10 ..."], [16.1, "[2/5] MCP parity: reference on seed 1 scores 0.9371 over MCP, 0.9371 in-process -> identical"], [26.14, "[3/5] Frontier-model transcripts: 72 found in results/llm/, 72 reproduce their stored score on"], [26.14, "  replay."], [26.14, "[4/5] Attributing lost points ..."], [45.11, "[5/5] Wrote results/summary.md, results/summary.json, results/report.html (4476 KB)."], [45.11, ""], [45.11, "Agent                     kind         n    mean    std    min    max"], [45.12, "Reference solution        reference   10   0.859  0.058  0.724  0.937"], [45.12, "Claude Opus 5.5           frontier     9   0.853  0.062  0.745  0.942"], [45.12, "Claude Sonnet 5.5         frontier     9   0.730  0.075  0.616  0.842"], [45.12, "Claude Sonnet 4.5         frontier     9   0.315  0.194  0.000  0.604"], [45.12, "Claude Haiku 5.5          frontier     9   0.000  0.000  0.000  0.000"], [45.13, "Stops fitting early       heuristic   10   0.599  0.308  0.000  0.887"], [45.13, "One flight condition      heuristic   10   0.745  0.087  0.631  0.899"], [45.13, "Assumes uniform wind      heuristic   10   0.385  0.147  0.128  0.604"], [45.13, "Ignores the smoke column  heuristic   10   0.192  0.111  0.000  0.396"], [45.13, "Trusts priors             heuristic   10   0.039  0.068  0.000  0.215"], [45.13, "Stop early                baseline    10   0.042  0.022  0.000  0.076"], [45.14, "Calibrate, never drop     baseline    10   0.000  0.000  0.000  0.000"], [45.14, "Release overhead          baseline    10   0.000  0.000  0.000  0.000"], [45.14, "Random actions            baseline    10   0.000  0.000  0.000  0.000"], [45.14, "Do nothing                baseline    10   0.000  0.000  0.000  0.000"], [45.14, ""], [45.15, "4 earlier runs replayed and checked (not in the headline): claude-haiku-5-5,"], [45.15, "  claude-opus-5-5-weather-2026-11-15, claude-sonnet-5-5, haiku-high-nouvel-essai"], [45.15, ""], [45.15, "Done in 45 s."]];
 const W = 1920, H = 1080, C = { ch: '#0E0F12', term: '#121418', bar: '#1b1e23', ink: '#E6E8EB', dim: '#7c838d', green: '#4fbf6a', blue: '#3BA3FF', ember: '#FF5A1F' };
 const cv = document.getElementById('c'), x = cv.getContext('2d');
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -30,13 +30,32 @@ function band(i0, i1, a, color = C.blue) {
   x.save(); x.globalAlpha = a * 0.16; x.fillStyle = color; x.fillRect(TX - 14, lineY(i0) - LH + 7, WW - 52, (i1 - i0 + 1) * LH); x.restore();
   x.save(); x.globalAlpha = a; x.fillStyle = color; x.fillRect(TX - 14, lineY(i0) - LH + 7, 3, (i1 - i0 + 1) * LH); x.restore();
 }
+
+// ---------------------------------------------------------------- cards: the judges' protocol in Harbor, then the limit
+function card(t, t0, t1, title, rows, note) {
+  const a = seg(t, t0, t0 + 0.6) * (1 - seg(t, t1 - 0.6, t1));
+  if (a <= 0) return;
+  x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = a;
+  const X = 470, Y = 470 + (1 - a) * 20, Wd = 980, Hh = 120 + rows.length * 58 + (note ? 70 : 0);
+  x.fillStyle = '#17191d'; x.strokeStyle = '#3b3f47'; x.lineWidth = 1.5;
+  x.beginPath(); x.roundRect(X, Y, Wd, Hh, 18); x.fill(); x.stroke();
+  x.font = '600 17px Inter'; x.fillStyle = C.dim; x.letterSpacing = '3px'; x.fillText(title, X + 36, Y + 52); x.letterSpacing = '0px';
+  rows.forEach(([k, v, hi], i) => {
+    const y = Y + 112 + i * 58;
+    x.fillStyle = '#2a2d33'; x.fillRect(X + 36, y - 38, Wd - 72, 1);
+    x.font = '400 26px Inter'; x.fillStyle = C.ink; x.fillText(k, X + 36, y);
+    x.font = '700 30px JBM'; x.fillStyle = hi || C.ink; x.textAlign = 'right'; x.fillText(v, X + Wd - 36, y); x.textAlign = 'left';
+  });
+  if (note) { x.font = '400 22px Inter'; x.fillStyle = C.dim; x.fillText(note, X + 36, Y + Hh - 34); }
+  x.restore();
+}
 window.render = function (t) {
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.fillStyle = C.ch; x.fillRect(0, 0, W, H);
   // camera: hold, then move in on the results table once the run is over
   const ri = row('Reference solution'), zk = ease(seg(t, END + 1.5, END + 4.5));
   const z = lerp(1, 1.42, zk), fy = lerp(H / 2, lineY(ri + 2), zk), fx = lerp(W / 2, TX + 420, zk);
   const appear = ease(seg(t, 0, 0.9));
-  x.globalAlpha = appear * (1 - seg(t, 59, 60));
+  x.globalAlpha = appear * (1 - seg(t, 57, 58));
   x.translate(W / 2, H / 2 + (1 - appear) * 30); x.scale(z, z); x.translate(-fx, -fy);
   // window
   x.fillStyle = C.term; x.beginPath(); x.roundRect(WX, WY, WW, WH, 16); x.fill();
@@ -71,6 +90,16 @@ window.render = function (t) {
   else if (t < END + 0.2) { cx = TX; cy = lineY(shown); }
   else { cx = prompt(lineY(OUT.length)); cy = lineY(OUT.length); }
   if (blink || (t > TYPE0 && t < ENTER)) { x.fillStyle = C.ink; x.globalAlpha *= 0.85; x.fillRect(cx, cy - FS + 3, 12, FS + 4); }
+  card(t, 12.8, 33.0, "THE JUDGES' PROTOCOL IN HARBOR · 3 WORLDS", [
+    ['Reference (oracle)', '0.890', C.blue],
+    ['OpenCode + Sonnet 5.5, MCP tools · below on 3 of 3', '0.728'],
+    ['Do nothing (nop)', '0.000'],
+    ['Stop early', '0.040'],
+  ]);
+  card(t, 33.4, 49.5, 'A LIMIT WE FOUND OURSELVES', [
+    ['OpenCode + Sonnet 5.5 with a shell', '0.889', C.ember],
+    ['Reference', '0.890', C.blue],
+  ], 'With a shell, it rewrites the simulator from the briefing and skips the calculation budget.');
 };
 window.ready = Promise.all(['400 20px JBM', '700 20px JBM', '400 17px Inter'].map((f) => document.fonts.load(f)));
 window.ready.then(() => window.render(0));
